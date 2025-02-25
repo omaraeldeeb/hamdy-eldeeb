@@ -17,10 +17,10 @@ Check out the live demo of the project [here](https://hamdy-eldeep.vercel.app/).
 
 ## Technologies Used
 
-- Frontend: React, Redux, Tailwind CSS
-- Backend: Node.js, Express.js
-- Database: MongoDB
-- Authentication: JWT (JSON Web Tokens)
+- Frontend: React, NextJs, Redux, Tailwind CSS
+- Backend: NextJs
+- Database: Postgresql
+- Authentication: Next Auth
 - Deployment: Vercel
 
 ## Installation
@@ -62,8 +62,5 @@ Contributions are welcome! If you have any suggestions or improvements, please c
 
 ## Contact
 
-If you have any questions or inquiries, please contact me at [your-email@example.com].
+If you have any questions or inquiries, please contact me at omar.hameed.eldeeb@gmail.com
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
