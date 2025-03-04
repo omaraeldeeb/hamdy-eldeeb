@@ -43,3 +43,5 @@ next-env.d.ts
 # Exclude sample data and seed files
 db/sample-data.ts
 db/seed.ts
+
+*.zip
