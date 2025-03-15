@@ -1,7 +1,7 @@
+import { auth } from "@/auth";
+import { deleteOrder, getAllOrders } from "@/lib/actions/order.actions";
 import { Metadata } from "next";
-import { getMyOrders } from "@/lib/actions/order.actions";
-import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
-import Link from "next/link";
+import { requireAdmin } from "@/lib/auth-guard";
 import {
   Table,
   TableBody,
@@ -10,27 +10,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Link from "next/link";
 import Pagination from "@/components/shared/pagination";
+import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import DeleteDialog from "@/components/shared/delete-dialog";
 
-export const metadata: Metadata = { title: "My Orders" };
+export const metadata: Metadata = {
+  title: "Admin Orders",
+};
 
-const OrdersPage = async (props: {
-  searchParams: Promise<{ page: string }>;
+const AdminOrdersPage = async (props: {
+  searchParams: Promise<{ page: string; query: string }>;
 }) => {
-  const { page } = await props.searchParams;
+  await requireAdmin();
 
-  const orders = await getMyOrders({ page: Number(page) || 1 });
+  const { page = "1", query: searchText } = await props.searchParams;
+
+  const session = await auth();
+
+  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+
+  const orders = await getAllOrders({
+    page: Number(page),
+    limit: 10,
+    query: searchText,
+  });
 
   return (
     <div className="space-y-2 ">
-      <h2 className="h2-bold">Orders</h2>
+      <div className="flex items-center gap-3">
+        <h1 className="h2-bold">Orders</h1>
+        {searchText && (
+          <div>
+            Filltered by <i>&quot;{searchText}&quot;</i>{" "}
+            <Link href="/admin/orders">
+              <Button variant="outline" size="sm" className="ml-2">
+                Remove Filter
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>DATE</TableHead>
+              <TableHead>BUYER</TableHead>
               <TableHead>TOTAL</TableHead>
               <TableHead>PAID</TableHead>
               <TableHead>DELIVERED</TableHead>
@@ -44,6 +72,7 @@ const OrdersPage = async (props: {
                 <TableCell>
                   {formatDateTime(order.createdAt).dateTime}
                 </TableCell>
+                <TableCell>{order.user.name}</TableCell>
                 <TableCell>{formatCurrency(order.totalPrice)}</TableCell>
                 <TableCell>
                   {order.isPaid && order.paidAt
@@ -59,6 +88,7 @@ const OrdersPage = async (props: {
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/order/${order.id}`}>Details</Link>
                   </Button>
+                  <DeleteDialog id={order.id} action={deleteOrder} />
                 </TableCell>
               </TableRow>
             ))}
@@ -75,4 +105,4 @@ const OrdersPage = async (props: {
   );
 };
 
-export default OrdersPage;
+export default AdminOrdersPage;
