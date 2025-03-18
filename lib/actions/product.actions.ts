@@ -96,10 +96,10 @@ export async function getAllProducts({
       sort === "lowest"
         ? { price: "asc" }
         : sort === "highest"
-        ? { price: "desc" }
-        : sort === "rating"
-        ? { rating: "desc" }
-        : { createdAt: "desc" },
+          ? { price: "desc" }
+          : sort === "rating"
+            ? { rating: "desc" }
+            : { createdAt: "desc" },
     skip: (page - 1) * limit,
     take: limit,
   });
@@ -169,7 +169,11 @@ export async function getAllCategories() {
     _count: true,
   });
 
-  return data;
+  // Convert to plain objects to remove any Prisma-specific properties
+  return data.map((item) => ({
+    category: item.category,
+    _count: item._count,
+  }));
 }
 
 // Get featured products
