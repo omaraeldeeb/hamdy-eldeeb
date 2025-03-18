@@ -113,11 +113,14 @@ const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className="w-full flex justify-between">
+        <Button
+          variant="outline"
+          className="w-full flex justify-between dark:border-border dark:bg-card dark:text-card-foreground"
+        >
           <span>Filters</span>
           <div className="flex items-center">
             {activeFiltersCount > 0 && (
-              <span className="bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">
+              <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">
                 {activeFiltersCount}
               </span>
             )}
@@ -125,10 +128,10 @@ const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
           </div>
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] dark:border-t dark:border-border dark:bg-card dark:text-card-foreground">
         <DrawerHeader>
           <DrawerTitle>Filter Products</DrawerTitle>
-          <DrawerDescription>
+          <DrawerDescription className="dark:text-muted-foreground">
             Apply filters to narrow down your search results
           </DrawerDescription>
         </DrawerHeader>
@@ -287,13 +290,22 @@ const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
             </AccordionItem>
           </Accordion>
         </div>
-        <DrawerFooter className="border-t">
+        <DrawerFooter className="border-t dark:border-border">
           <div className="flex gap-2">
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button
+                variant="outline"
+                className="dark:border-border dark:bg-card dark:text-card-foreground dark:hover:bg-accent"
+              >
+                Cancel
+              </Button>
             </DrawerClose>
             {activeFiltersCount > 0 && (
-              <Button asChild variant="ghost" className="text-destructive">
+              <Button
+                asChild
+                variant="ghost"
+                className="text-destructive dark:text-destructive dark:hover:bg-accent"
+              >
                 <Link href={baseUrl}>Clear All</Link>
               </Button>
             )}

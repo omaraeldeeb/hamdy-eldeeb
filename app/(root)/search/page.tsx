@@ -187,7 +187,7 @@ const SearchPage = async (props: {
         {/* Products area */}
         <div className="space-y-4 md:col-span-4">
           {/* Active filters and sort */}
-          <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="bg-card text-card-foreground rounded-lg shadow-sm p-4 border border-border">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               {/* Active filters */}
               <div className="flex flex-wrap gap-2 items-center">
@@ -199,7 +199,7 @@ const SearchPage = async (props: {
                     {q !== "all" && q !== "" && (
                       <Badge
                         variant="secondary"
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 dark:bg-secondary dark:text-secondary-foreground"
                       >
                         Search: {q}
                         <Link

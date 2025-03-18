@@ -44,4 +44,12 @@ next-env.d.ts
 db/sample-data.ts
 db/seed.ts
 
+# Exclude Arabic language documentationlude Arabic language documentation and related files
+/arabic-lang-steps.md
+
+
+
+
+
+*.zip/arabic-docs//arabic-lang-*
 *.zip
