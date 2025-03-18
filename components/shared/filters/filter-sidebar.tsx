@@ -99,7 +99,7 @@ const FilterSidebar = ({
   ].filter(Boolean).length;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 h-fit sticky top-24">
+    <div className="bg-white rounded-lg shadow-sm p-4 h-fit sticky top-24 hidden lg:block">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium">Filters</h2>
         {activeFiltersCount > 0 && (

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import FilterSidebar from "@/components/shared/filters/filter-sidebar";
 import SortSelect from "@/components/shared/filters/sort-select";
+import MobileFilterDrawer from "@/components/shared/filters/mobile-filter-drawer";
 
 const prices = [
   {
@@ -149,125 +150,145 @@ const SearchPage = async (props: {
   ].filter(Boolean).length;
 
   return (
-    <div className="grid md:grid-cols-5 md:gap-5">
-      {/* Filter sidebar - now a client component */}
-      <FilterSidebar
-        categories={categories}
-        prices={prices}
-        ratings={ratings}
-        currentCategory={category}
-        currentPrice={price}
-        currentRating={rating}
-        baseUrl="/search"
-        query={q}
-        sort={sort}
-        page={page}
-      />
+    <div className="w-full">
+      {/* Mobile Filter Drawer - only visible on small screens */}
+      <div className="md:hidden mb-4">
+        <MobileFilterDrawer
+          categories={categories}
+          prices={prices}
+          ratings={ratings}
+          currentCategory={category}
+          currentPrice={price}
+          currentRating={rating}
+          baseUrl="/search"
+          query={q}
+          sort={sort}
+          page={page}
+        />
+      </div>
 
-      {/* Products area */}
-      <div className="space-y-4 md:col-span-4">
-        {/* Active filters and sort */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Active filters */}
-            <div className="flex flex-wrap gap-2 items-center">
-              {activeFiltersCount > 0 ? (
-                <>
-                  <span className="text-sm text-muted-foreground">
-                    Active filters:
-                  </span>
-                  {q !== "all" && q !== "" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Search: {q}
-                      <Link
-                        href={getFilterUrl({ q: "all" })}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ✕
-                      </Link>
-                    </Badge>
-                  )}
-                  {category !== "all" && category !== "" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Category: {category}
-                      <Link
-                        href={getFilterUrl({ c: "all" })}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ✕
-                      </Link>
-                    </Badge>
-                  )}
-                  {price !== "all" && price !== "" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Price: {price}
-                      <Link
-                        href={getFilterUrl({ p: "all" })}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ✕
-                      </Link>
-                    </Badge>
-                  )}
-                  {rating !== "all" && rating !== "" && (
-                    <Badge
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      Rating: {rating}+ stars
-                      <Link
-                        href={getFilterUrl({ r: "all" })}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        ✕
-                      </Link>
-                    </Badge>
-                  )}
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground">
-                  No filters applied
-                </span>
-              )}
-            </div>
-
-            {/* Sort dropdown - now a client component */}
-            <SortSelect
-              sortOrders={sortOrders}
-              currentSort={sort}
-              baseUrl="/search"
-              query={q}
-              category={category}
-              price={price}
-              rating={rating}
-              page={page}
-            />
-          </div>
+      <div className="grid md:grid-cols-5 md:gap-5">
+        {/* Desktop Filter sidebar - hidden on mobile */}
+        <div className="hidden md:block">
+          <FilterSidebar
+            categories={categories}
+            prices={prices}
+            ratings={ratings}
+            currentCategory={category}
+            currentPrice={price}
+            currentRating={rating}
+            baseUrl="/search"
+            query={q}
+            sort={sort}
+            page={page}
+          />
         </div>
 
-        {/* Products grid */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {products.data.length === 0 ? (
-            <div className="col-span-full py-12 text-center">
-              <div className="text-xl font-medium">No products found</div>
-              <p className="text-muted-foreground mt-2">
-                Try changing your filters or search
-              </p>
+        {/* Products area */}
+        <div className="space-y-4 md:col-span-4">
+          {/* Active filters and sort */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              {/* Active filters */}
+              <div className="flex flex-wrap gap-2 items-center">
+                {activeFiltersCount > 0 ? (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      Active filters:
+                    </span>
+                    {q !== "all" && q !== "" && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        Search: {q}
+                        <Link
+                          href={getFilterUrl({ q: "all" })}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ✕
+                        </Link>
+                      </Badge>
+                    )}
+                    {category !== "all" && category !== "" && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        Category: {category}
+                        <Link
+                          href={getFilterUrl({ c: "all" })}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ✕
+                        </Link>
+                      </Badge>
+                    )}
+                    {price !== "all" && price !== "" && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        Price: {price}
+                        <Link
+                          href={getFilterUrl({ p: "all" })}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ✕
+                        </Link>
+                      </Badge>
+                    )}
+                    {rating !== "all" && rating !== "" && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        Rating: {rating}+ stars
+                        <Link
+                          href={getFilterUrl({ r: "all" })}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ✕
+                        </Link>
+                      </Badge>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    No filters applied
+                  </span>
+                )}
+              </div>
+
+              {/* Sort dropdown - now a client component */}
+              <SortSelect
+                sortOrders={sortOrders}
+                currentSort={sort}
+                baseUrl="/search"
+                query={q}
+                category={category}
+                price={price}
+                rating={rating}
+                page={page}
+              />
             </div>
-          ) : (
-            products.data.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))
-          )}
+          </div>
+
+          {/* Products grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {products.data.length === 0 ? (
+              <div className="col-span-full py-12 text-center">
+                <div className="text-xl font-medium">No products found</div>
+                <p className="text-muted-foreground mt-2">
+                  Try changing your filters or search
+                </p>
+              </div>
+            ) : (
+              products.data.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>
