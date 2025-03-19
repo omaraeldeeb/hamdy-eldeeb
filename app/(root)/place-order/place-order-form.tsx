@@ -13,6 +13,8 @@ const PlaceOrderForm = () => {
 
     const res = await createOrder();
     if (res.redirectTo) {
+      // Dispatch cart update event before redirecting
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
       router.push(res.redirectTo);
     }
   };

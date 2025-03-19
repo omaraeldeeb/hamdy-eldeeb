@@ -24,7 +24,7 @@ const Header = () => {
             </span>
           </Link>
         </div>
-        <div className="hidden md:block">
+        <div className="flex-1 flex justify-center max-w-xs md:max-w-none mx-2">
           <Search />
         </div>
         <Menu />

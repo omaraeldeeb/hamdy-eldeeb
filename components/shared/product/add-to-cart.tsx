@@ -11,6 +11,12 @@ const AddToCart = ({ cart, item }: { cart?: Cart; item: CartItem }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const triggerCartUpdate = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
+    }
+  };
+
   const handleAddToCart = async () => {
     startTransition(async () => {
       const res = await addItemToCart(item);
@@ -20,7 +26,8 @@ const AddToCart = ({ cart, item }: { cart?: Cart; item: CartItem }) => {
         return;
       }
 
-      // Success toast with action
+      triggerCartUpdate();
+
       toast.success(res.message, {
         action: {
           label: "Go To Cart",
@@ -35,6 +42,7 @@ const AddToCart = ({ cart, item }: { cart?: Cart; item: CartItem }) => {
       const res = await removeItemFromCart(item.productId);
 
       if (res.success) {
+        triggerCartUpdate();
         toast.success(res.message);
       } else {
         toast.error(res.message);

@@ -23,6 +23,12 @@ const CartTable = ({ cart }: { cart?: Cart }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const triggerCartUpdate = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
+    }
+  };
+
   return (
     <>
       <h1 className="py-4 h2-bold">Shopping Cart</h1>
@@ -68,7 +74,9 @@ const CartTable = ({ cart }: { cart?: Cart }) => {
                             const res = await removeItemFromCart(
                               item.productId
                             );
-                            if (!res.success) {
+                            if (res.success) {
+                              triggerCartUpdate();
+                            } else {
                               toast.error(res.message);
                             }
                           })
@@ -88,8 +96,9 @@ const CartTable = ({ cart }: { cart?: Cart }) => {
                         onClick={() =>
                           startTransition(async () => {
                             const res = await addItemToCart(item);
-
-                            if (!res.success) {
+                            if (res.success) {
+                              triggerCartUpdate();
+                            } else {
                               toast.error(res.message);
                             }
                           })

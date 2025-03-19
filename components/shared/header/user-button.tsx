@@ -18,13 +18,15 @@ const UserButton = async () => {
     return (
       <Button asChild>
         <Link href="/sign-in">
-          <UserIcon /> Sign In
+          <UserIcon size={24} /> Sign In
         </Link>
       </Button>
     );
   }
 
-  const firstInitial = session.user?.name?.[0]?.charAt(0).toUpperCase() ?? "U";
+  // Extract first name from the full name
+  const fullName = session.user?.name || "User";
+  const firstName = fullName.split(" ")[0] || "User";
 
   return (
     <div className="flex gap-2 items-center">
@@ -33,9 +35,9 @@ const UserButton = async () => {
           <div className="flex items-center">
             <Button
               variant="ghost"
-              className="relative w-8 h-8 rounded-full ml-2 flex items-center justify-center bg-gray-200 dark:bg-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+              className="relative h-10 px-4 rounded-full ml-2 flex items-center justify-center bg-gray-200 dark:bg-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 text-sm font-medium"
             >
-              {firstInitial}
+              <span className="max-w-[80px] truncate">{firstName}</span>
             </Button>
           </div>
         </DropdownMenuTrigger>
