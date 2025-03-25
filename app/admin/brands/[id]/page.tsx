@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   title: "Update Brand",
 };
 
-const UpdateBrandPage = async ({ params }: { params: { id: string } }) => {
+const UpdateBrandPage = async (props: { params: Promise<{ id: string }> }) => {
+  const params = await props.params;
   await requireAdmin();
 
   const brand = await getBrandById(params.id);

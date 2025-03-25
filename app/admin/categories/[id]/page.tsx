@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   title: "Update Category",
 };
 
-const UpdateCategoryPage = async ({ params }: { params: { id: string } }) => {
+const UpdateCategoryPage = async (props: { params: Promise<{ id: string }> }) => {
+  const params = await props.params;
   await requireAdmin();
 
   const categoryData = await getCategoryById(params.id);

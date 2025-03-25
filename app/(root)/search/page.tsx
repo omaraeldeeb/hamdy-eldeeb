@@ -78,11 +78,10 @@ export async function generateMetadata(props: {
   }
 }
 
-const SearchPage = async ({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
+const SearchPage = async (props: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
+  const searchParams = await props.searchParams;
   const {
     q = "all",
     category = "all",

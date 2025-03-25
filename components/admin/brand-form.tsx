@@ -160,10 +160,10 @@ const BrandForm = ({
                 <FormLabel>Logo</FormLabel>
                 <Card>
                   <CardContent className="space-y-2 mt-2">
-                    {field.value && (
+                    {logo && (
                       <div className="relative w-40 h-40 mx-auto">
                         <NextImage
-                          src={field.value}
+                          src={logo}
                           alt="brand logo"
                           className="object-contain"
                           fill
@@ -174,7 +174,8 @@ const BrandForm = ({
                       <UploadButton
                         endpoint="imageUploader"
                         onClientUploadComplete={(res: { url: string }[]) => {
-                          form.setValue("logo", res[0].url);
+                          // Using field.onChange to properly handle form state
+                          field.onChange(res[0].url);
                         }}
                         onUploadError={(error: Error) => {
                           toast.error(`ERROR! ${error.message}`);
@@ -197,10 +198,10 @@ const BrandForm = ({
                 <FormLabel>Banner</FormLabel>
                 <Card>
                   <CardContent className="space-y-2 mt-2">
-                    {field.value && (
+                    {banner && (
                       <div className="relative w-full h-40">
                         <NextImage
-                          src={field.value}
+                          src={banner}
                           alt="brand banner"
                           className="object-cover"
                           fill
@@ -211,7 +212,8 @@ const BrandForm = ({
                       <UploadButton
                         endpoint="imageUploader"
                         onClientUploadComplete={(res: { url: string }[]) => {
-                          form.setValue("banner", res[0].url);
+                          // Using field.onChange to properly handle form state
+                          field.onChange(res[0].url);
                         }}
                         onUploadError={(error: Error) => {
                           toast.error(`ERROR! ${error.message}`);

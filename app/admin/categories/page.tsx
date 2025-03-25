@@ -10,11 +10,12 @@ export const metadata: Metadata = {
   title: "Categories Management",
 };
 
-export default async function CategoriesPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function CategoriesPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
 
   // Destructure the searchParams first to avoid direct property access

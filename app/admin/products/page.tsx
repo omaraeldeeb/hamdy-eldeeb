@@ -19,11 +19,12 @@ export const metadata: Metadata = {
   title: "Products Management",
 };
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function ProductsPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
 
   // Destructure the searchParams first to avoid direct property access

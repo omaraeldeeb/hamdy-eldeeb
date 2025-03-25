@@ -9,11 +9,12 @@ export const metadata: Metadata = {
   title: "Brands Management",
 };
 
-export default async function BrandsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
+export default async function BrandsPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireAdmin();
 
   // Destructure the searchParams first to avoid direct property access

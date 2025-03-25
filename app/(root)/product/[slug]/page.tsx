@@ -10,11 +10,12 @@ import { auth } from "@/auth";
 import ReviewList from "./review-list";
 import Rating from "@/components/shared/product/rating";
 
-export default async function ProductPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function ProductPage(
+  props: {
+    params: Promise<{ slug: string }>;
+  }
+) {
+  const params = await props.params;
   const product = await getProductBySlug(params.slug);
 
   if (!product) {

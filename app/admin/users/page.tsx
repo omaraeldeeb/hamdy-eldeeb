@@ -21,11 +21,18 @@ export const metadata: Metadata = {
 };
 
 const AdminUserPage = async (props: {
-  searchParams: { page: string; query: string };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
   await requireAdmin();
-  const { page = "1", query: searchText } = props.searchParams;
-  const users = await getAllUsers({ page: Number(page), query: searchText });
+  const searchParams = await props.searchParams;
+
+  // Use destructuring pattern for consistency
+  const { page: pageParam, query: queryParam } = searchParams;
+
+  const page = typeof pageParam === "string" ? Number(pageParam) : 1;
+  const searchText = typeof queryParam === "string" ? queryParam : "";
+
+  const users = await getAllUsers({ page, query: searchText });
 
   return (
     <div className="space-y-2 ">

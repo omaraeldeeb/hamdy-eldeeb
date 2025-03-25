@@ -21,11 +21,16 @@ export const metadata: Metadata = {
 };
 
 const AdminOrdersPage = async (props: {
-  searchParams: Promise<{ page: string; query: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
+  const searchParams = await props.searchParams;
   await requireAdmin();
 
-  const { page = "1", query: searchText } = await props.searchParams;
+  // Use destructuring pattern for consistency
+  const { page: pageParam, query: queryParam } = searchParams;
+
+  const page = typeof pageParam === "string" ? Number(pageParam) : 1;
+  const query = typeof queryParam === "string" ? queryParam : "";
 
   const session = await auth();
 
@@ -34,16 +39,16 @@ const AdminOrdersPage = async (props: {
   const orders = await getAllOrders({
     page: Number(page),
     limit: 10,
-    query: searchText,
+    query,
   });
 
   return (
     <div className="space-y-2 ">
       <div className="flex items-center gap-3">
         <h1 className="h2-bold">Orders</h1>
-        {searchText && (
+        {query && (
           <div>
-            Filltered by <i>&quot;{searchText}&quot;</i>{" "}
+            Filltered by <i>&quot;{query}&quot;</i>{" "}
             <Link href="/admin/orders">
               <Button variant="outline" size="sm" className="ml-2">
                 Remove Filter
@@ -52,6 +57,7 @@ const AdminOrdersPage = async (props: {
           </div>
         )}
       </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>

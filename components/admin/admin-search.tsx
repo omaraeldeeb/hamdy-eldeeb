@@ -5,9 +5,6 @@ import { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
-// We need to ensure this component works with the updated searchParams handling
-// ...
-
 const AdminSearch = () => {
   const pathname = usePathname();
   const formActionUrl = pathname.includes("/admin/orders")
