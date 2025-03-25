@@ -9,20 +9,56 @@ const currency = z
     "Price must have exactly 2 decimal places"
   );
 
+// Schema for image
+export const imageSchema = z.object({
+  url: z.string().min(1, "Image URL is required"),
+  alt: z.string().optional().nullable(),
+  type: z.string().optional().nullable(),
+  position: z.number().optional().nullable(),
+});
+
+// Schema for inserting category
+export const insertCategorySchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters long"),
+  slug: z.string().min(3, "Slug must be at least 3 characters long"),
+  description: z.string().optional().nullable(),
+  parentId: z.string().optional().nullable(),
+  level: z.number().int().min(1).max(3).default(1),
+});
+
+// Schema for updating category
+export const updateCategorySchema = insertCategorySchema.extend({
+  id: z.string().min(1, "Category ID is required"),
+});
+
+// Schema for inserting brand
+export const insertBrandSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters long"),
+  slug: z.string().min(3, "Slug must be at least 3 characters long"),
+  description: z.string().optional().nullable(),
+  logo: z.string().optional().nullable(),
+  banner: z.string().optional().nullable(),
+});
+
+// Schema for updating brand
+export const updateBrandSchema = insertBrandSchema.extend({
+  id: z.string().min(1, "Brand ID is required"),
+});
+
 // Schema for inserting products
 export const insertProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
   slug: z.string().min(3, "Slug must be at least 3 characters long"),
-  category: z.string().min(3, "Category must be at least 3 characters long"),
-  brand: z.string().min(3, "Brand must be at least 3 characters long"),
+  categoryId: z.string().min(1, "Category ID is required"),
+  brandId: z.string().min(1, "Brand ID is required"),
   description: z
     .string()
     .min(3, "Description must be at least 3 characters long"),
   stock: z.coerce.number(),
-  images: z.array(z.string()).min(1, "At least one image is required"),
+  images: z.array(imageSchema).min(1, "At least one image is required"),
   isFeatured: z.boolean(),
-  banner: z.string().nullable(),
   price: currency,
+  banner: z.string().nullable().optional(),
 });
 
 // Schema for updating products

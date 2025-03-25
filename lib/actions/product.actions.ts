@@ -12,6 +12,13 @@ export async function getLatestProducts() {
   const data = await prisma.product.findMany({
     take: LATEST_PRODUCTS_LIMIT,
     orderBy: { createdAt: "desc" },
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
   });
 
   return convertToPlainObject(data);
@@ -21,6 +28,13 @@ export async function getLatestProducts() {
 export async function getProductBySlug(slug: string) {
   return await prisma.product.findFirst({
     where: { slug: slug },
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
   });
 }
 
@@ -28,6 +42,13 @@ export async function getProductBySlug(slug: string) {
 export async function getProductById(productId: string) {
   const data = await prisma.product.findFirst({
     where: { id: productId },
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
   });
   return convertToPlainObject(data);
 }
@@ -37,7 +58,7 @@ export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
   page,
-  category,
+  categoryId,
   price,
   rating,
   sort,
@@ -45,7 +66,7 @@ export async function getAllProducts({
   query: string;
   limit?: number;
   page: number;
-  category?: string;
+  categoryId?: string;
   price?: string;
   rating?: string;
   sort?: string;
@@ -62,7 +83,8 @@ export async function getAllProducts({
       : {};
 
   // Category filter
-  const categoryFilter = category && category !== "all" ? { category } : {};
+  const categoryFilter =
+    categoryId && categoryId !== "all" ? { categoryId } : {};
 
   // Price filter
   const priceFilter: Prisma.ProductWhereInput =
@@ -102,12 +124,26 @@ export async function getAllProducts({
             : { createdAt: "desc" },
     skip: (page - 1) * limit,
     take: limit,
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
   });
 
-  const dataCount = await prisma.product.count();
+  const dataCount = await prisma.product.count({
+    where: {
+      ...queryFilter,
+      ...categoryFilter,
+      ...priceFilter,
+      ...ratingFilter,
+    },
+  });
 
   return {
-    data,
+    data: convertToPlainObject(data),
     totalPages: Math.ceil(dataCount / limit),
   };
 }
@@ -119,6 +155,12 @@ export async function deleteProduct(id: string) {
       where: { id },
     });
     if (!productExists) throw new Error("Product not found");
+
+    // Delete all images associated with the product first
+    await prisma.image.deleteMany({
+      where: { productId: id },
+    });
+
     await prisma.product.delete({ where: { id } });
 
     revalidatePath("/admin/products");
@@ -128,11 +170,27 @@ export async function deleteProduct(id: string) {
   }
 }
 
-// Creata a product
+// Create a product
 export async function createProduct(data: z.infer<typeof insertProductSchema>) {
   try {
-    const product = insertProductSchema.parse(data);
-    await prisma.product.create({ data: product });
+    const productData = insertProductSchema.parse(data);
+    const { images, ...productDetails } = productData;
+
+    // Create the product first
+    const newProduct = await prisma.product.create({
+      data: productDetails,
+    });
+
+    // Then create all the images with the product ID
+    if (images && images.length > 0) {
+      await prisma.image.createMany({
+        data: images.map((image, index) => ({
+          ...image,
+          productId: newProduct.id,
+          position: index,
+        })),
+      });
+    }
 
     revalidatePath("/admin/products");
     return { success: true, message: "Product created successfully" };
@@ -144,16 +202,35 @@ export async function createProduct(data: z.infer<typeof insertProductSchema>) {
 // Update a product
 export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
   try {
-    const product = updateProductSchema.parse(data);
+    const productData = updateProductSchema.parse(data);
+    const { id, images, ...productDetails } = productData;
+
     const productExists = await prisma.product.findFirst({
-      where: { id: product.id },
+      where: { id },
     });
     if (!productExists) throw new Error("Product not found");
 
+    // Update the product details
     await prisma.product.update({
-      where: { id: product.id },
-      data: product,
+      where: { id },
+      data: productDetails,
     });
+
+    // Delete existing images
+    await prisma.image.deleteMany({
+      where: { productId: id },
+    });
+
+    // Create new images
+    if (images && images.length > 0) {
+      await prisma.image.createMany({
+        data: images.map((image, index) => ({
+          ...image,
+          productId: id,
+          position: index,
+        })),
+      });
+    }
 
     revalidatePath("/admin/products");
     return { success: true, message: "Product updated successfully" };
@@ -162,17 +239,25 @@ export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
   }
 }
 
-// Get all categories
-export async function getAllCategories() {
-  const data = await prisma.product.groupBy({
-    by: ["category"],
-    _count: true,
+// Get all categories from the new Category model
+export async function getAllCategoriesFromProducts() {
+  // This function should be replaced with a call to category.actions.ts
+  // Keeping it temporarily for backward compatibility
+  const categoryData = await prisma.category.findMany({
+    select: {
+      id: true,
+      name: true,
+      _count: {
+        select: { products: true },
+      },
+    },
+    orderBy: { name: "asc" },
   });
 
-  // Convert to plain objects to remove any Prisma-specific properties
-  return data.map((item) => ({
-    category: item.category,
-    _count: item._count,
+  return categoryData.map((item) => ({
+    category: item.name,
+    _count: item._count.products,
+    id: item.id,
   }));
 }
 
@@ -182,6 +267,13 @@ export async function getFeaturedProducts() {
     where: { isFeatured: true },
     orderBy: { createdAt: "desc" },
     take: 4,
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
   });
 
   return convertToPlainObject(data);

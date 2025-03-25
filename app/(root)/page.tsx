@@ -8,9 +8,9 @@ import {
   getLatestProducts,
 } from "@/lib/actions/product.actions";
 
-const homepage = async () => {
-  const latestProducts = await getLatestProducts();
+export default async function Home() {
   const featuredProducts = await getFeaturedProducts();
+  const latestProducts = await getLatestProducts();
   return (
     <>
       {featuredProducts.length > 0 && (
@@ -22,6 +22,4 @@ const homepage = async () => {
       <IconBoxes />
     </>
   );
-};
-
-export default homepage;
+}

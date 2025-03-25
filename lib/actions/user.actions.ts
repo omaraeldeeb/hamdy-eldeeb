@@ -17,7 +17,6 @@ import { ShippingAddress } from "@/types";
 import { PAGE_SIZE } from "../constants";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { getMyCart } from "./cart.actions";
 
 // Sign in user with credentials
 export async function signInWithCredentials(
@@ -43,15 +42,8 @@ export async function signInWithCredentials(
 
 // Sign out user
 export async function signOutUser() {
-  // Sign out without redirecting to any specific page
-  const currentCart = await getMyCart();
-  await prisma.cart.delete({
-    where: { id: currentCart?.id },
-  });
-  await signOut({
-    redirectTo: "/login",
-    redirect: false,
-  });
+  // Simply sign out without deleting the cart
+  await signOut();
 }
 
 // Sign up user

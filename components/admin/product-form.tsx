@@ -1,11 +1,20 @@
 "use client";
 
 import { productDefaultValues } from "@/lib/constants";
-import { insertProductSchema, updateProductSchema } from "@/lib/validators";
-import { Product } from "@/types";
+import {
+  insertProductSchema,
+  updateProductSchema,
+  imageSchema,
+} from "@/lib/validators";
+import { Product, Category, Brand, ProductImage } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { ControllerRenderProps, SubmitHandler, useForm } from "react-hook-form";
+import {
+  ControllerRenderProps,
+  SubmitHandler,
+  useForm,
+  Resolver,
+} from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -23,8 +32,24 @@ import { Textarea } from "../ui/textarea";
 import { createProduct, updateProduct } from "@/lib/actions/product.actions";
 import { UploadButton } from "@/lib/uploadthing";
 import { Card, CardContent } from "../ui/card";
-import Image from "next/image";
+import NextImage from "next/image"; // Renamed import to avoid conflict
 import { Checkbox } from "../ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { useEffect, useState } from "react";
+import { getAllCategories } from "@/lib/actions/category.actions";
+import { getAllBrands } from "@/lib/actions/brand.actions";
+import { X } from "lucide-react";
+
+// Extended schema to include banner for the form
+type ProductFormSchema = z.infer<typeof insertProductSchema> & {
+  banner?: string | null;
+};
 
 const ProductForm = ({
   type,
@@ -36,49 +61,136 @@ const ProductForm = ({
   productId?: string;
 }) => {
   const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const form = useForm<z.infer<typeof insertProductSchema>>({
+  // Fetch categories and brands on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesData, brandsData] = await Promise.all([
+          getAllCategories(),
+          getAllBrands(),
+        ]);
+        setCategories(
+          categoriesData.map((category) => ({
+            ...category,
+            parent: category.parent || undefined, // Convert null to undefined
+          }))
+        );
+        setBrands(brandsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load categories or brands");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Transform product images for form if updating
+  const defaultImages: z.infer<typeof imageSchema>[] =
+    product?.images?.map((img: ProductImage) => ({
+      url: img.url,
+      alt: img.alt || "",
+      type: img.type || "",
+      position: img.position || 0,
+    })) || [];
+
+  const defaultValues: ProductFormSchema = {
+    ...productDefaultValues,
+    ...product,
+    images: defaultImages,
+    banner: product?.banner || null,
+  };
+
+  const form = useForm<ProductFormSchema>({
     resolver: zodResolver(
       type === "Create" ? insertProductSchema : updateProductSchema
-    ),
-    defaultValues:
-      product && type === "Update" ? product : productDefaultValues,
+    ) as unknown as Resolver<ProductFormSchema>, // Type assertion with proper resolver type
+    defaultValues: type === "Update" ? defaultValues : productDefaultValues,
   });
 
-  const onSubmit: SubmitHandler<z.infer<typeof insertProductSchema>> = async (
-    values
-  ) => {
-    // On Create
-    if (type === "Create") {
-      const res = await createProduct(values);
+  const onSubmit: SubmitHandler<ProductFormSchema> = async (values) => {
+    try {
+      // Create a copy of values for submission
+      const submissionData = { ...values };
+      const banner = submissionData.banner;
 
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
-        router.push("/admin/products");
-      }
-    }
-    // On Update
-    if (type === "Update") {
-      if (!productId) {
-        router.push("/admin/products");
-        return;
-      }
-      const res = await updateProduct({ ...values, id: productId });
+      // Remove banner from submission if not needed
+      delete submissionData.banner;
 
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
-        router.push("/admin/products");
+      // Add banner back to submission data if product is featured
+      if (submissionData.isFeatured && banner) {
+        (
+          submissionData as z.infer<typeof insertProductSchema> & {
+            banner?: string;
+          }
+        ).banner = banner;
       }
+
+      // On Create
+      if (type === "Create") {
+        const res = await createProduct(submissionData);
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success(res.message);
+          router.push("/admin/products");
+        }
+      }
+
+      // On Update
+      if (type === "Update" && productId) {
+        const res = await updateProduct({
+          ...submissionData,
+          id: productId,
+        });
+
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success(res.message);
+          router.push("/admin/products");
+        }
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("Failed to save product");
     }
   };
 
-  const images = form.watch("images");
-  const isFeatured = form.watch("isFeatured");
-  const banner = form.watch("banner");
+  const images = form.watch("images") || [];
+
+  const handleAddImage = (url: string) => {
+    const newImage: z.infer<typeof imageSchema> = {
+      url,
+      alt: "",
+      type: "main",
+      position: images.length,
+    };
+    form.setValue("images", [...images, newImage]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const updatedImages = [...images];
+    updatedImages.splice(index, 1);
+
+    // Update positions
+    const reindexedImages = updatedImages.map((img, idx) => ({
+      ...img,
+      position: idx,
+    }));
+
+    form.setValue("images", reindexedImages);
+  };
+
+  if (isLoading) {
+    return <div>Loading categories and brands...</div>;
+  }
 
   return (
     <Form {...form}>
@@ -145,24 +257,31 @@ const ProductForm = ({
             )}
           />
         </div>
-        <div className="flex flex-col md:flex-row gap-5 ">
+        <div className="flex flex-col md:flex-row gap-5">
           {/* Category */}
           <FormField
             control={form.control}
-            name="category"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof insertProductSchema>,
-                "category"
-              >;
-            }) => (
+            name="categoryId"
+            render={({ field }) => (
               <FormItem className="w-full">
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter category" {...field} />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -170,26 +289,33 @@ const ProductForm = ({
           {/* Brand */}
           <FormField
             control={form.control}
-            name="brand"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof insertProductSchema>,
-                "brand"
-              >;
-            }) => (
+            name="brandId"
+            render={({ field }) => (
               <FormItem className="w-full">
                 <FormLabel>Brand</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter brand" {...field} />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a brand" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {brands.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="flex flex-col md:flex-row gap-5 ">
+        <div className="flex flex-col md:flex-row gap-5">
           {/* Price */}
           <FormField
             control={form.control}
@@ -233,7 +359,7 @@ const ProductForm = ({
             )}
           />
         </div>
-        <div className="uplaod-field flex flex-col md:flex-row gap-5 ">
+        <div className="uplaod-field">
           {/* Images */}
           <FormField
             control={form.control}
@@ -242,30 +368,42 @@ const ProductForm = ({
               <FormItem className="w-full">
                 <FormLabel>Images</FormLabel>
                 <Card>
-                  <CardContent className="sace-y-2 mt-2 min-h-48">
-                    <div className="flex-start space-x-2">
-                      {images.map((image: string) => (
-                        <Image
-                          key={image}
-                          src={image}
-                          alt="product image"
-                          className="w-20 h-20 object-cover object-center rounded-sm"
-                          width={100}
-                          height={100}
-                        />
+                  <CardContent className="space-y-4 pt-4">
+                    <div className="flex flex-wrap gap-4">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative">
+                          <div className="relative w-24 h-24">
+                            <NextImage
+                              src={image.url}
+                              alt={image.alt || "product image"}
+                              className="object-cover rounded-md"
+                              fill
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       ))}
-                      <FormControl>
-                        <UploadButton
-                          endpoint="imageUploader"
-                          onClientUploadComplete={(res: { url: string }[]) => {
-                            form.setValue("images", [...images, res[0].url]);
-                          }}
-                          onUploadError={(error: Error) => {
-                            toast.error(`ERROR! ${error.message}`);
-                          }}
-                        />
-                      </FormControl>
                     </div>
+
+                    <FormControl>
+                      <UploadButton
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res: { url: string }[]) => {
+                          handleAddImage(res[0].url);
+                        }}
+                        onUploadError={(error: Error) => {
+                          toast.error(`ERROR! ${error.message}`);
+                        }}
+                      />
+                    </FormControl>
                   </CardContent>
                 </Card>
                 <FormMessage />
@@ -275,47 +413,51 @@ const ProductForm = ({
         </div>
         <div className="upload-field">
           {/* isFeatured */}
-          Featured Product
-          <Card>
-            <CardContent className="space-y-2 mt-2">
-              <FormField
-                control={form.control}
-                name="isFeatured"
-                render={({ field }) => (
-                  <FormItem className="space-x-2 items-center">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel>Is Featured?</FormLabel>
-                  </FormItem>
+          <FormField
+            control={form.control}
+            name="isFeatured"
+            render={({ field }) => (
+              <FormItem className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel>Featured Product</FormLabel>
+                </div>
+                {field.value && (
+                  <div>
+                    <FormLabel>Banner Image</FormLabel>
+                    <Card>
+                      <CardContent className="pt-4">
+                        {form.getValues("banner") && (
+                          <div className="relative w-full h-40 mb-4">
+                            <NextImage
+                              src={form.getValues("banner")!}
+                              alt="banner image"
+                              className="object-cover rounded-md"
+                              fill
+                            />
+                          </div>
+                        )}
+                        <UploadButton
+                          endpoint="imageUploader"
+                          onClientUploadComplete={(res: { url: string }[]) => {
+                            form.setValue("banner", res[0].url);
+                          }}
+                          onUploadError={(error: Error) => {
+                            toast.error(`ERROR! ${error.message}`);
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
-              />
-              {isFeatured && banner && (
-                <Image
-                  src={banner}
-                  alt="banner image"
-                  className="w-full object-cover object-center rounded-sm"
-                  width={1920}
-                  height={680}
-                />
-              )}
-
-              {isFeatured && !banner && (
-                <UploadButton
-                  endpoint="imageUploader"
-                  onClientUploadComplete={(res: { url: string }[]) => {
-                    form.setValue("banner", res[0].url);
-                  }}
-                  onUploadError={(error: Error) => {
-                    toast.error(`ERROR! ${error.message}`);
-                  }}
-                />
-              )}
-            </CardContent>
-          </Card>
+              </FormItem>
+            )}
+          />
         </div>
         <div>
           {/* Description */}

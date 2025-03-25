@@ -13,6 +13,8 @@ const Pagination = ({ page, totalPages, urlParamName }: PaginationProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Make sure pagination works with the updated searchParams pattern
+  // If it's using direct searchParams access, we may need to update it
   const handleClick = (btnType: "prev" | "next") => {
     const pageValue = btnType === "next" ? Number(page) + 1 : Number(page) - 1;
     const newUrl = formUrlQuery({

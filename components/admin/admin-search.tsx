@@ -5,13 +5,16 @@ import { useState, useEffect } from "react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
+// We need to ensure this component works with the updated searchParams handling
+// ...
+
 const AdminSearch = () => {
   const pathname = usePathname();
   const formActionUrl = pathname.includes("/admin/orders")
     ? "/admin/orders"
     : pathname.includes("/admin/users")
-    ? "/admin/users"
-    : "/admin/products";
+      ? "/admin/users"
+      : "/admin/products";
 
   const searchParams = useSearchParams();
   const [queryValue, setQueryValue] = useState(searchParams.get("query") || "");
@@ -36,5 +39,9 @@ const AdminSearch = () => {
     </form>
   );
 };
+
+// If it's using URLSearchParams or useSearchParams directly, it should be fine
+// But if it's accessing properties directly, we may need to update it
+// ...
 
 export default AdminSearch;

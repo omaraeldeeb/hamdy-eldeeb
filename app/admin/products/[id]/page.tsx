@@ -8,16 +8,14 @@ export const metadata: Metadata = {
   title: "Update Product",
 };
 
-const AdminProductUpdatePage = async (props: {
-  params: Promise<{
-    id: string;
-  }>;
-}) => {
+export default async function EditProductPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   await requireAdmin();
 
-  const { id } = await props.params;
-
-  const product = await getProductById(id);
+  const product = await getProductById(params.id);
 
   if (!product) return notFound();
 
@@ -28,6 +26,4 @@ const AdminProductUpdatePage = async (props: {
       <ProductForm type="Update" product={product} productId={product.id} />
     </div>
   );
-};
-
-export default AdminProductUpdatePage;
+}

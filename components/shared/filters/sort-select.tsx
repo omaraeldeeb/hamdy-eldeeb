@@ -12,13 +12,13 @@ import {
 
 interface SortSelectProps {
   sortOrders: { label: string; value: string }[];
-  currentSort: string;
+  currentSort: string | string[];
   baseUrl: string;
-  query: string;
-  category: string;
-  price: string;
-  rating: string;
-  page: string;
+  query: string | string[];
+  category: string | string[];
+  price: string | string[];
+  rating: string | string[];
+  page: string | string[];
 }
 
 const SortSelect: React.FC<SortSelectProps> = ({
@@ -33,16 +33,45 @@ const SortSelect: React.FC<SortSelectProps> = ({
 }) => {
   const router = useRouter();
 
+  const sortStr = Array.isArray(currentSort) ? currentSort[0] : currentSort;
+  const queryStr = Array.isArray(query) ? query[0] : query;
+  const categoryStr = Array.isArray(category) ? category[0] : category;
+  const priceStr = Array.isArray(price) ? price[0] : price;
+  const ratingStr = Array.isArray(rating) ? rating[0] : rating;
+  const pageStr = Array.isArray(page) ? page[0] : page;
+
   const getFilterUrl = (sort: string) => {
     const params = new URLSearchParams();
 
-    if (query !== "all" && query !== "") params.append("q", query);
-    if (category !== "all" && category !== "")
-      params.append("category", category);
-    if (price !== "all" && price !== "") params.append("price", price);
-    if (rating !== "all" && rating !== "") params.append("rating", rating);
-    if (sort !== "newest") params.append("sort", sort);
-    if (page !== "1") params.append("page", page);
+    // Handle query parameter
+    if (queryStr && queryStr !== "all") {
+      params.append("q", queryStr);
+    }
+
+    // Handle category parameter
+    if (categoryStr && categoryStr !== "all") {
+      params.append("category", categoryStr);
+    }
+
+    // Handle price parameter
+    if (priceStr && priceStr !== "all") {
+      params.append("price", priceStr);
+    }
+
+    // Handle rating parameter
+    if (ratingStr && ratingStr !== "all") {
+      params.append("rating", ratingStr);
+    }
+
+    // Handle sort parameter
+    if (sort && sort !== "newest") {
+      params.append("sort", sort);
+    }
+
+    // Handle page parameter
+    if (pageStr && pageStr !== "1") {
+      params.append("page", pageStr);
+    }
 
     return `${baseUrl}?${params.toString()}`;
   };
@@ -57,7 +86,7 @@ const SortSelect: React.FC<SortSelectProps> = ({
       <span className="text-sm text-muted-foreground whitespace-nowrap">
         Sort by:
       </span>
-      <Select value={currentSort} onValueChange={handleSortChange}>
+      <Select value={sortStr} onValueChange={handleSortChange}>
         <SelectTrigger className="dark:border-border dark:bg-card dark:text-card-foreground">
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>

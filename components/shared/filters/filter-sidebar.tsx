@@ -13,17 +13,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { FilterX } from "lucide-react";
 
+// Update the props type definition to handle string or string[] types
 interface FilterSidebarProps {
   categories: { category: string }[];
-  prices: { name: string; value: string }[];
+  prices: { value: string; name: string }[];
   ratings: number[];
-  currentCategory: string;
-  currentPrice: string;
-  currentRating: string;
+  currentCategory: string | string[];
+  currentPrice: string | string[];
+  currentRating: string | string[];
   baseUrl: string;
-  query: string;
-  sort: string;
-  page: string;
+  query: string | string[];
+  sort: string | string[];
+  page: string | string[];
 }
 
 const FilterSidebar = ({
@@ -40,6 +41,18 @@ const FilterSidebar = ({
 }: FilterSidebarProps) => {
   const router = useRouter();
 
+  // Convert string[] to string where needed
+  const categoryStr = Array.isArray(currentCategory)
+    ? currentCategory[0]
+    : currentCategory;
+  const priceStr = Array.isArray(currentPrice) ? currentPrice[0] : currentPrice;
+  const ratingStr = Array.isArray(currentRating)
+    ? currentRating[0]
+    : currentRating;
+  const queryStr = Array.isArray(query) ? query[0] : query;
+  const sortStr = Array.isArray(sort) ? sort[0] : sort;
+  const pageStr = Array.isArray(page) ? page[0] : page;
+
   // Modified getFilterUrl to preserve existing filters
   const getFilterUrl = ({
     c,
@@ -54,21 +67,39 @@ const FilterSidebar = ({
   }) => {
     const params = new URLSearchParams();
 
-    // Only update the filters that are explicitly passed
-    // otherwise preserve the current value
-    const newQuery = q !== undefined ? q : query;
-    const newCategory = c !== undefined ? c : currentCategory;
-    const newPrice = p !== undefined ? p : currentPrice;
-    const newRating = r !== undefined ? r : currentRating;
+    // Handle query parameter
+    const newQuery = q !== undefined ? q : queryStr;
+    if (newQuery && newQuery !== "all") {
+      params.append("q", newQuery);
+    }
 
-    if (newQuery !== "all" && newQuery !== "") params.append("q", newQuery);
-    if (newCategory !== "all" && newCategory !== "")
+    // Handle category parameter
+    const newCategory = c !== undefined ? c : categoryStr;
+    if (newCategory && newCategory !== "all") {
       params.append("category", newCategory);
-    if (newPrice !== "all" && newPrice !== "") params.append("price", newPrice);
-    if (newRating !== "all" && newRating !== "")
+    }
+
+    // Handle price parameter
+    const newPrice = p !== undefined ? p : priceStr;
+    if (newPrice && newPrice !== "all") {
+      params.append("price", newPrice);
+    }
+
+    // Handle rating parameter
+    const newRating = r !== undefined ? r : ratingStr;
+    if (newRating && newRating !== "all") {
       params.append("rating", newRating);
-    if (sort !== "newest") params.append("sort", sort);
-    if (page !== "1") params.append("page", page);
+    }
+
+    // Handle sort parameter
+    if (sortStr && sortStr !== "newest") {
+      params.append("sort", sortStr);
+    }
+
+    // Handle page parameter
+    if (pageStr && pageStr !== "1") {
+      params.append("page", pageStr);
+    }
 
     const queryString = params.toString();
     return `${baseUrl}${queryString ? `?${queryString}` : ""}`;
@@ -92,10 +123,10 @@ const FilterSidebar = ({
 
   // Count active filters
   const activeFiltersCount = [
-    query !== "all" && query !== "",
-    currentCategory !== "all" && currentCategory !== "",
-    currentPrice !== "all" && currentPrice !== "",
-    currentRating !== "all" && currentRating !== "",
+    queryStr !== "all" && queryStr !== "",
+    categoryStr !== "all" && categoryStr !== "",
+    priceStr !== "all" && priceStr !== "",
+    ratingStr !== "all" && ratingStr !== "",
   ].filter(Boolean).length;
 
   return (
@@ -132,13 +163,13 @@ const FilterSidebar = ({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="category-all"
-                  checked={currentCategory === "all" || currentCategory === ""}
+                  checked={categoryStr === "all" || categoryStr === ""}
                   onCheckedChange={() => handleCategoryChange("all")}
                 />
                 <label
                   htmlFor="category-all"
                   className={`text-sm cursor-pointer ${
-                    currentCategory === "all" || currentCategory === ""
+                    categoryStr === "all" || categoryStr === ""
                       ? "font-bold"
                       : ""
                   }`}
@@ -151,13 +182,13 @@ const FilterSidebar = ({
                 <div key={cat.category} className="flex items-center space-x-2">
                   <Checkbox
                     id={`category-${cat.category}`}
-                    checked={currentCategory === cat.category}
+                    checked={categoryStr === cat.category}
                     onCheckedChange={() => handleCategoryChange(cat.category)}
                   />
                   <label
                     htmlFor={`category-${cat.category}`}
                     className={`text-sm cursor-pointer ${
-                      currentCategory === cat.category ? "font-bold" : ""
+                      categoryStr === cat.category ? "font-bold" : ""
                     }`}
                   >
                     {cat.category}
@@ -178,13 +209,13 @@ const FilterSidebar = ({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="price-all"
-                  checked={currentPrice === "all"}
+                  checked={priceStr === "all"}
                   onCheckedChange={() => handlePriceChange("all")}
                 />
                 <label
                   htmlFor="price-all"
                   className={`text-sm cursor-pointer ${
-                    currentPrice === "all" ? "font-bold" : ""
+                    priceStr === "all" ? "font-bold" : ""
                   }`}
                 >
                   Any
@@ -195,13 +226,13 @@ const FilterSidebar = ({
                 <div key={p.value} className="flex items-center space-x-2">
                   <Checkbox
                     id={`price-${p.value}`}
-                    checked={currentPrice === p.value}
+                    checked={priceStr === p.value}
                     onCheckedChange={() => handlePriceChange(p.value)}
                   />
                   <label
                     htmlFor={`price-${p.value}`}
                     className={`text-sm cursor-pointer ${
-                      currentPrice === p.value ? "font-bold" : ""
+                      priceStr === p.value ? "font-bold" : ""
                     }`}
                   >
                     {p.name}
@@ -222,13 +253,13 @@ const FilterSidebar = ({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="rating-all"
-                  checked={currentRating === "all"}
+                  checked={ratingStr === "all"}
                   onCheckedChange={() => handleRatingChange("all")}
                 />
                 <label
                   htmlFor="rating-all"
                   className={`text-sm cursor-pointer ${
-                    currentRating === "all" ? "font-bold" : ""
+                    ratingStr === "all" ? "font-bold" : ""
                   }`}
                 >
                   Any
@@ -239,13 +270,13 @@ const FilterSidebar = ({
                 <div key={r} className="flex items-center space-x-2">
                   <Checkbox
                     id={`rating-${r}`}
-                    checked={currentRating === r.toString()}
+                    checked={ratingStr === r.toString()}
                     onCheckedChange={() => handleRatingChange(r.toString())}
                   />
                   <label
                     htmlFor={`rating-${r}`}
                     className={`text-sm cursor-pointer flex items-center ${
-                      currentRating === r.toString() ? "font-bold" : ""
+                      ratingStr === r.toString() ? "font-bold" : ""
                     }`}
                   >
                     <div className="flex mr-1">

@@ -8,13 +8,44 @@ import {
   insertOrderItemSchema,
   paymentResultSchema,
   insertReviewSchema,
+  imageSchema,
+  insertCategorySchema,
+  insertBrandSchema,
 } from "@/lib/validators";
+
+export type ProductImage = z.infer<typeof imageSchema> & {
+  id: string;
+  productId: string;
+  createdAt: Date;
+};
+
+export type Category = z.infer<typeof insertCategorySchema> & {
+  id: string;
+  createdAt: Date;
+  children?: Category[];
+  parent?: Category;
+  _count?: {
+    children?: number;
+    products?: number;
+  };
+};
+
+export type Brand = z.infer<typeof insertBrandSchema> & {
+  id: string;
+  createdAt: Date;
+  _count?: {
+    products?: number;
+  };
+};
 
 export type Product = z.infer<typeof insertProductSchema> & {
   id: string;
   rating: string;
   numReviews: number;
   createdAt: Date;
+  category: Category;
+  brand: Brand;
+  images: ProductImage[];
 };
 
 export type Cart = z.infer<typeof insertCartSchema>;

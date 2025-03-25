@@ -7,12 +7,13 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { getAllCategories } from "@/lib/actions/product.actions";
+import { getAllCategoriesFromProducts } from "@/lib/actions/product.actions";
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 
 const CategoryDrawer = async () => {
-  const categories = await getAllCategories();
+  // Fix: Get categories using the compatible function that returns data in the expected format
+  const categories = await getAllCategoriesFromProducts();
 
   return (
     <Drawer direction="left">

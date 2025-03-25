@@ -3,7 +3,7 @@ import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
 import Menu from "./menu";
 import CategoryDrawer from "./category-drawer";
-import Search from "./search";
+import SearchContainer from "./search-container";
 
 const Header = () => {
   return (
@@ -25,7 +25,7 @@ const Header = () => {
           </Link>
         </div>
         <div className="flex-1 flex justify-center max-w-xs md:max-w-none mx-2">
-          <Search />
+          <SearchContainer />
         </div>
         <Menu />
       </div>

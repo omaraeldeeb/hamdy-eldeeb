@@ -1,46 +1,99 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getAllCategories } from "@/lib/actions/product.actions";
-import { SearchIcon } from "lucide-react";
+"use client";
 
-const Search = async () => {
-  const categories = await getAllCategories();
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { SearchIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+interface Category {
+  category: string;
+}
+
+interface SearchProps {
+  categories: Category[];
+}
+
+const Search = ({ categories }: SearchProps) => {
+  const [search, setSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const router = useRouter();
+
+  // When user clicks outside the dropdown, close it
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (search.trim()) {
+      router.push(`/search?q=${encodeURIComponent(search)}`);
+    }
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    router.push(`/search?category=${encodeURIComponent(categoryName)}`);
+    setShowDropdown(false);
+  };
+
+  const handleSearchIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the document click event from firing
+    setShowDropdown(!showDropdown);
+  };
+
   return (
-    <form action="/search" method="GET">
-      <div className="flex w-full items-center space-x-1 sm:space-x-2 max-w-[280px] sm:max-w-sm">
-        <Select name="category">
-          <SelectTrigger className="w-[80px] sm:w-[180px] text-xs sm:text-base">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem key="All" value="all">
-              All
-            </SelectItem>
-            {categories.map((x) => (
-              <SelectItem key={x.category} value={x.category}>
-                {x.category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="w-full max-w-xl relative">
+      <form onSubmit={handleSubmit} className="relative flex items-center">
         <Input
-          name="q"
-          type="text"
-          placeholder="Search..."
-          className="w-[120px] sm:w-auto md:w-[100px] lg:w-[300px] text-xs sm:text-base"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search products..."
+          className="pr-10 min-w-[200px]"
         />
-        <Button size="sm" className="sm:size-default px-1 sm:px-3">
-          <SearchIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-        </Button>
-      </div>
-    </form>
+        <div className="absolute right-0 top-0 h-full flex items-center">
+          <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleSearchIconClick}
+              >
+                <SearchIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="text-sm font-medium py-2 px-4 text-muted-foreground">
+                Categories
+              </div>
+              {categories.map((cat) => (
+                <DropdownMenuItem
+                  key={cat.category}
+                  onClick={() => handleCategoryClick(cat.category)}
+                >
+                  {cat.category}
+                </DropdownMenuItem>
+              ))}
+              <div className="text-xs text-muted-foreground mt-2 py-2 px-4 border-t">
+                Press Enter to search for products
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </form>
+    </div>
   );
 };
 

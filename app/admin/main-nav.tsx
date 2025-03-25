@@ -2,24 +2,45 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import React from "react";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  ListTree,
+  Briefcase,
+} from "lucide-react";
 
-const links = [
+const ADMIN_LINKS = [
   {
-    title: "Overview",
-    href: "/admin/overview",
+    label: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboard,
   },
   {
-    title: "Products",
+    label: "Products",
     href: "/admin/products",
+    icon: Package,
   },
   {
-    title: "Orders",
+    label: "Categories", // New item
+    href: "/admin/categories",
+    icon: ListTree,
+  },
+  {
+    label: "Brands", // New item
+    href: "/admin/brands",
+    icon: Briefcase,
+  },
+  {
+    label: "Orders",
     href: "/admin/orders",
+    icon: ShoppingCart,
   },
   {
-    title: "Users",
+    label: "Users",
     href: "/admin/users",
+    icon: Users,
   },
 ];
 
@@ -33,7 +54,7 @@ const MainNav = ({
       className={cn("flex items-center space-x-4 lg:space-x-6", className)}
       {...props}
     >
-      {links.map((item) => (
+      {ADMIN_LINKS.map((item) => (
         <Link
           key={item.href}
           href={item.href}
@@ -42,7 +63,7 @@ const MainNav = ({
             pathname.includes(item.href) ? "" : "text-muted-foreground"
           )}
         >
-          {item.title}
+          {item.label}
         </Link>
       ))}
     </nav>

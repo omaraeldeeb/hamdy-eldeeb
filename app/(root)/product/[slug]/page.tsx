@@ -10,16 +10,21 @@ import { auth } from "@/auth";
 import ReviewList from "./review-list";
 import Rating from "@/components/shared/product/rating";
 
-const ProductDetailsPage = async (props: {
-  params: Promise<{ slug: string }>;
-}) => {
-  const { slug } = await props.params;
-
-  const product = await getProductBySlug(slug);
+export default async function ProductPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const product = await getProductBySlug(params.slug);
 
   if (!product) {
-    return notFound();
+    notFound();
   }
+
+  // Update this to use the new category structure
+  const categoryName = product.category?.name || "";
+  // Update brand reference if needed
+  const brandName = product.brand?.name || "";
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -30,7 +35,7 @@ const ProductDetailsPage = async (props: {
     <>
       <section>
         <div className="grid grid-cols-1 md:grid-cols-5">
-          {/* Images Col */}
+          {/* Images Col - Updated to pass ProductImage[] */}
           <div className="col-span-2">
             <ProductImages images={product.images} />
           </div>
@@ -38,7 +43,7 @@ const ProductDetailsPage = async (props: {
           <div className="col-span-2 p-5">
             <div className="flex flex-col gap-6">
               <p>
-                {product.brand} {product.category}
+                {brandName} {categoryName}
               </p>
               <h1 className="h3-bold">{product.name}</h1>
               <Rating value={Number(product.rating)} />
@@ -83,7 +88,7 @@ const ProductDetailsPage = async (props: {
                         slug: product.slug,
                         price: product.price,
                         qty: 1,
-                        image: product.images![0],
+                        image: product.images[0]?.url || "",
                       }}
                     />
                   </div>
@@ -103,6 +108,4 @@ const ProductDetailsPage = async (props: {
       </section>
     </>
   );
-};
-
-export default ProductDetailsPage;
+}

@@ -1,13 +1,14 @@
 import ProductCard from "@/components/shared/product/product-card";
 import {
   getAllProducts,
-  getAllCategories,
+  getAllCategoriesFromProducts,
 } from "@/lib/actions/product.actions";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import FilterSidebar from "@/components/shared/filters/filter-sidebar";
 import SortSelect from "@/components/shared/filters/sort-select";
 import MobileFilterDrawer from "@/components/shared/filters/mobile-filter-drawer";
+import Pagination from "@/components/shared/pagination";
 
 const prices = [
   {
@@ -77,15 +78,10 @@ export async function generateMetadata(props: {
   }
 }
 
-const SearchPage = async (props: {
-  searchParams: Promise<{
-    q?: string;
-    category?: string;
-    price?: string;
-    rating?: string;
-    sort?: string;
-    page?: string;
-  }>;
+const SearchPage = async ({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
 }) => {
   const {
     q = "all",
@@ -94,7 +90,7 @@ const SearchPage = async (props: {
     rating = "all",
     sort = "newest",
     page = "1",
-  } = await props.searchParams;
+  } = searchParams;
 
   // Construct filter url - modified to support removing individual filters
   const getFilterUrl = ({
@@ -114,32 +110,64 @@ const SearchPage = async (props: {
   }) => {
     const params = new URLSearchParams();
 
-    // Only add params that are not being reset to "all"
-    if (newQ && newQ !== "all") params.append("q", newQ);
-    if ((c !== undefined ? c : category) !== "all")
-      params.append("category", c !== undefined ? c : category);
-    if ((p !== undefined ? p : price) !== "all")
-      params.append("price", p !== undefined ? p : price);
-    if ((r !== undefined ? r : rating) !== "all")
-      params.append("rating", r !== undefined ? r : rating);
-    if ((s !== undefined ? s : sort) !== "newest")
-      params.append("sort", s !== undefined ? s : sort);
-    if ((pg !== undefined ? pg : page) !== "1")
-      params.append("page", pg !== undefined ? pg : page);
+    // Helper function to ensure we always have a string
+    const ensureString = (value: string | string[] | undefined): string => {
+      if (Array.isArray(value)) return value[0];
+      return value || "";
+    };
+
+    // Handle query parameter
+    const queryValue = newQ !== undefined ? newQ : q;
+    if (queryValue && queryValue !== "all") {
+      params.append("q", ensureString(queryValue));
+    }
+
+    // Handle category parameter
+    const categoryValue = c !== undefined ? c : category;
+    if (categoryValue && categoryValue !== "all") {
+      params.append("category", ensureString(categoryValue));
+    }
+
+    // Handle price parameter
+    const priceValue = p !== undefined ? p : price;
+    if (priceValue && priceValue !== "all") {
+      params.append("price", ensureString(priceValue));
+    }
+
+    // Handle rating parameter
+    const ratingValue = r !== undefined ? r : rating;
+    if (ratingValue && ratingValue !== "all") {
+      params.append("rating", ensureString(ratingValue));
+    }
+
+    // Handle sort parameter
+    const sortValue = s !== undefined ? s : sort;
+    if (sortValue && sortValue !== "newest") {
+      params.append("sort", ensureString(sortValue));
+    }
+
+    // Handle page parameter
+    const pageValue = pg !== undefined ? pg : page;
+    if (pageValue && pageValue !== "1") {
+      params.append("page", ensureString(pageValue));
+    }
 
     return `/search?${params.toString() || ""}`;
   };
 
+  // Use correct parameters for the new API with proper string handling
   const products = await getAllProducts({
-    query: q,
-    category,
-    price,
-    rating,
-    sort,
-    page: Number(page),
+    query: q && q !== "all" ? q.toString() : "",
+    categoryId:
+      category && category !== "all" ? category.toString() : undefined,
+    price: price && price !== "all" ? price.toString() : undefined,
+    rating: rating && rating !== "all" ? rating.toString() : undefined,
+    sort: sort && sort !== "newest" ? sort.toString() : undefined,
+    page: Number(page || "1"),
   });
 
-  const categories = await getAllCategories();
+  // Use the correct method to get categories with the expected format
+  const categories = await getAllCategoriesFromProducts();
 
   // Count active filters
   const activeFiltersCount = [
@@ -289,6 +317,15 @@ const SearchPage = async (props: {
               ))
             )}
           </div>
+
+          {/* Pagination */}
+          {products.totalPages > 1 && (
+            <Pagination
+              page={Number(page)}
+              totalPages={products.totalPages}
+              urlParamName="page"
+            />
+          )}
         </div>
       </div>
     </div>
