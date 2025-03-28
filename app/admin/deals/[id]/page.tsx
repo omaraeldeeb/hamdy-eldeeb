@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/card";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams: Record<string, string | string[] | undefined>;
+  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function DealEditPage({ params }: PageProps) {
+export default async function DealEditPage(props: PageProps) {
+  const params = await props.params;
   await requireAdmin();
 
   const { deal, error } = await getDeal(params.id);
