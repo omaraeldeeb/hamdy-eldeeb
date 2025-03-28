@@ -225,3 +225,21 @@ model Review {
   @@index([productId])
   @@index([rating])
 }
+
+model Deal {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleEn       String
+  titleAr       String
+  descriptionEn String
+  descriptionAr String
+  imageUrl      String
+  targetDate    DateTime @db.Timestamp(6)
+  startDate     DateTime @default(now()) @db.Timestamp(6)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([targetDate])
+  @@index([startDate])
+}

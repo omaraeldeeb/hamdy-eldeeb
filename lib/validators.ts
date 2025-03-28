@@ -185,3 +185,33 @@ export const insertReviewSchema = z.object({
     .min(1, "Rating must be at least 1")
     .max(5, "Rating must be at most 5"),
 });
+
+// Schema for deals/promotions
+export const dealSchema = z.object({
+  titleEn: z
+    .string()
+    .min(3, "English title must be at least 3 characters long"),
+  titleAr: z.string().min(3, "Arabic title must be at least 3 characters long"),
+  descriptionEn: z
+    .string()
+    .min(3, "English description must be at least 3 characters long"),
+  descriptionAr: z
+    .string()
+    .min(3, "Arabic description must be at least 3 characters long"),
+  imageUrl: z.string().min(1, "Image URL is required"),
+  targetDate: z.date({
+    required_error: "Target date is required",
+    invalid_type_error: "Target date must be a valid date",
+  }),
+  startDate: z
+    .date({
+      invalid_type_error: "Start date must be a valid date",
+    })
+    .optional(),
+  isActive: z.boolean().default(true),
+});
+
+// Schema for updating deals
+export const updateDealSchema = dealSchema.extend({
+  id: z.string().min(1, "Deal ID is required"),
+});

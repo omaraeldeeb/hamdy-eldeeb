@@ -47,7 +47,7 @@ db/seed.ts
 # Exclude Arabic language documentationlude Arabic language documentation and related files
 /arabic-lang-steps.md
 
-
+/future-plans.md
 
 
 

@@ -9,6 +9,7 @@ import {
   Users,
   ListTree,
   Briefcase,
+  Clock,
 } from "lucide-react";
 
 const ADMIN_LINKS = [
@@ -23,14 +24,19 @@ const ADMIN_LINKS = [
     icon: Package,
   },
   {
-    label: "Categories", // New item
+    label: "Categories",
     href: "/admin/categories",
     icon: ListTree,
   },
   {
-    label: "Brands", // New item
+    label: "Brands",
     href: "/admin/brands",
     icon: Briefcase,
+  },
+  {
+    label: "Deals",
+    href: "/admin/deals",
+    icon: Clock,
   },
   {
     label: "Orders",

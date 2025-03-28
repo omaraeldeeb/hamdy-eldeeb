@@ -11,6 +11,7 @@ import {
   imageSchema,
   insertCategorySchema,
   insertBrandSchema,
+  dealSchema,
 } from "@/lib/validators";
 
 export type ProductImage = z.infer<typeof imageSchema> & {
@@ -68,4 +69,11 @@ export type Review = z.infer<typeof insertReviewSchema> & {
   id: string;
   createdAt: Date;
   user?: { name: string };
+};
+
+export type Deal = z.infer<typeof dealSchema> & {
+  id: string;
+  startDate: Date; // This is marked as optional in the schema but always present in DB
+  createdAt: Date;
+  updatedAt: Date;
 };
