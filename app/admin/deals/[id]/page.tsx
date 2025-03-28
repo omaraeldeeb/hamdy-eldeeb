@@ -10,11 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface DealEditPageProps {
-  params: { id: string };
+interface PageProps {
+  params: {
+    id: string;
+  };
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
-export default async function DealEditPage({ params }: DealEditPageProps) {
+export default async function DealEditPage({ params }: PageProps) {
   await requireAdmin();
 
   const { deal, error } = await getDeal(params.id);
