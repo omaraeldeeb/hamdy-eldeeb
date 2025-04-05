@@ -1,10 +1,17 @@
+import { z } from "zod";
+import {
+  insertProductSchema,
+  insertCategorySchema,
+  insertBrandSchema,
+  insertReviewSchema,
+} from "@/lib/validators";
+
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Hamdy ElDeeb";
 export const APP_DESCRIPTION =
   process.env.APP_DESCRIPTION || "Hamdy ElDeeb sanitaryware Store";
 export const SERVER_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
-export const LATEST_PRODUCTS_LIMIT =
-  Number(process.env.LATEST_PRODUCTS_LIMIT) || 4;
+export const LATEST_PRODUCTS_LIMIT = 12;
 
 export const signInDefaultValues = {
   email: "",
@@ -26,17 +33,22 @@ export const shippingAddressDefaultValues = {
   country: "",
 };
 
-export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
-  ? process.env.PAYMENT_METHODS.split(", ")
-  : ["PayPal", "Stripe", "CashOnDelivery"];
+export const PAYMENT_METHODS = ["paypal"];
 
 export const DEFAULT_PAYMENT_METHOD =
   process.env.DEFAULT_PAYMENT_METHOD || "PayPal";
 
-export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
+export const PAGE_SIZE = 10;
 
-// Updated with new fields for Arabic support and new product features
-export const productDefaultValues = {
+// Default pagination
+export const PRICE_RANGE = [0, 10000];
+
+// Default shipping prices
+export const SHIPPING_PRICE = "10.00";
+export const TAX_RATE = 0.1; // 10%
+
+// Create productDefaultValues from the schema definition
+export const productDefaultValues: z.infer<typeof insertProductSchema> = {
   name: "",
   nameAr: "",
   slug: "",
@@ -45,37 +57,36 @@ export const productDefaultValues = {
   descriptionAr: "",
   categoryId: "",
   brandId: "",
-  price: "0",
+  price: "0.00",
   discount: null,
   stock: 0,
   images: [],
   isFeatured: false,
   isLimitedTimeOffer: false,
   isNewArrival: false,
-  banner: null,
 };
 
-// Added categoryDefaultValues for forms
-export const categoryDefaultValues = {
+// Create categoryDefaultValues from the schema definition
+export const categoryDefaultValues: z.infer<typeof insertCategorySchema> = {
   name: "",
   nameAr: "",
   slug: "",
   slugAr: "",
-  description: "",
-  descriptionAr: "",
-  image: "",
-  parentId: "",
+  description: null,
+  descriptionAr: null,
+  image: null,
+  parentId: null,
   level: 1,
 };
 
-// Added brandDefaultValues for forms
-export const brandDefaultValues = {
+// Create brandDefaultValues from the schema definition
+export const brandDefaultValues: z.infer<typeof insertBrandSchema> = {
   name: "",
   nameAr: "",
   slug: "",
   slugAr: "",
-  description: "",
-  descriptionAr: "",
+  description: null,
+  descriptionAr: null,
   logo: null,
   banner: null,
 };
@@ -84,10 +95,13 @@ export const USER_ROLES = process.env.USER_ROLES
   ? process.env.USER_ROLES.split(", ")
   : ["admin", "user"];
 
-export const reviewFormDefaultValues = {
+// Create reviewFormDefaultValues from the schema definition
+export const reviewFormDefaultValues: z.infer<typeof insertReviewSchema> = {
+  productId: "",
+  userId: "",
   title: "",
-  comment: "",
-  rating: 0,
+  description: "",
+  rating: 5,
 };
 
 export const SENDER_EMAIL = process.env.SENDER_EMAIL || "onboarding@resend.dev";

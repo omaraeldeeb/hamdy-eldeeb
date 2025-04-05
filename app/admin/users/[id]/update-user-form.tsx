@@ -133,7 +133,7 @@ const UpdateUserForm = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {USER_ROLES.map((role) => (
+                    {USER_ROLES.map((role: string) => (
                       <SelectItem key={role} value={role}>
                         {role.charAt(0).toUpperCase() + role.slice(1)}
                       </SelectItem>

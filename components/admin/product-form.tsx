@@ -93,16 +93,44 @@ const ProductForm = ({
 
   // Transform product images for form if updating
   const defaultImages: z.infer<typeof imageSchema>[] =
-    product?.images?.map((img: ProductImage) => ({
-      url: img.url,
-      alt: img.alt || "",
-      type: img.type || "",
-      position: img.position || 0,
-    })) || [];
+    product?.images?.map((img: string | ProductImage) => {
+      // Handle both string and ProductImage types
+      if (typeof img === "string") {
+        return {
+          url: img,
+          alt: "",
+          type: "main",
+          position: 0,
+        };
+      }
+      return {
+        url: img.url,
+        alt: img.alt || "",
+        type: img.type || "",
+        position: img.position || 0,
+      };
+    }) || [];
 
   const defaultValues: ProductFormSchema = {
     ...productDefaultValues,
-    ...product,
+    ...(product
+      ? {
+          ...product,
+          // Type conversions to match ProductFormSchema
+          price: product.price
+            ? String(product.price)
+            : productDefaultValues.price,
+          discount: product.discount ? Number(product.discount) : null,
+          stock: product.stock
+            ? Number(product.stock)
+            : productDefaultValues.stock,
+          categoryId: product.categoryId || productDefaultValues.categoryId,
+          brandId: product.brandId || productDefaultValues.brandId,
+          isFeatured: Boolean(product.isFeatured),
+          isLimitedTimeOffer: Boolean(product.isLimitedTimeOffer),
+          isNewArrival: Boolean(product.isNewArrival),
+        }
+      : {}),
     images: defaultImages,
     banner: product?.banner || null,
   };
