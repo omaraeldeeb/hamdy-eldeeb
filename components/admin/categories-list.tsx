@@ -35,6 +35,7 @@ import {
   AlertDialogAction,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 interface CategoriesListProps {
   categories: Category[];
@@ -159,6 +160,7 @@ const CategoriesList = ({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Image</TableHead>
               <TableHead>Level</TableHead>
               <TableHead>Parent</TableHead>
               <TableHead>Children</TableHead>
@@ -177,6 +179,23 @@ const CategoriesList = ({
               categories.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell>{category.name}</TableCell>
+                  <TableCell>
+                    {category.image ? (
+                      <div className="relative h-10 w-10 rounded-md overflow-hidden">
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">
+                        No image
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{getLevelName(category.level)}</TableCell>
                   <TableCell>{category.parent?.name || "None"}</TableCell>
                   <TableCell>{category._count?.children || 0}</TableCell>

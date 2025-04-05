@@ -35,16 +35,48 @@ export const DEFAULT_PAYMENT_METHOD =
 
 export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
 
+// Updated with new fields for Arabic support and new product features
 export const productDefaultValues = {
   name: "",
+  nameAr: "",
   slug: "",
+  slugAr: "",
   description: "",
+  descriptionAr: "",
   categoryId: "",
   brandId: "",
   price: "0",
+  discount: null,
   stock: 0,
   images: [],
   isFeatured: false,
+  isLimitedTimeOffer: false,
+  isNewArrival: false,
+  banner: null,
+};
+
+// Added categoryDefaultValues for forms
+export const categoryDefaultValues = {
+  name: "",
+  nameAr: "",
+  slug: "",
+  slugAr: "",
+  description: "",
+  descriptionAr: "",
+  image: "",
+  parentId: "",
+  level: 1,
+};
+
+// Added brandDefaultValues for forms
+export const brandDefaultValues = {
+  name: "",
+  nameAr: "",
+  slug: "",
+  slugAr: "",
+  description: "",
+  descriptionAr: "",
+  logo: null,
   banner: null,
 };
 

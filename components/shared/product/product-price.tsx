@@ -1,21 +1,15 @@
-import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
-const ProductPrice = ({
-  value,
-  className,
-}: {
+export interface ProductPriceProps {
   value: number;
-  className?: string;
-}) => {
-  const stringValue = value.toFixed(2);
-  const [intValue, floatValue] = stringValue.split(".");
+  discounted?: boolean;
+}
 
+const ProductPrice = ({ value, discounted = false }: ProductPriceProps) => {
   return (
-    <p className={cn("text-2xl", className)}>
-      <span className="text-xs align-super">$</span>
-      {intValue}
-      <span className="text-xs align-super">.{floatValue}</span>
-    </p>
+    <div className={`font-semibold ${discounted ? "text-red-600" : ""}`}>
+      {formatCurrency(value)}
+    </div>
   );
 };
 

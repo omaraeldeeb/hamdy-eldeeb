@@ -20,8 +20,12 @@ export const imageSchema = z.object({
 // Schema for inserting category
 export const insertCategorySchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
+  nameAr: z.string().optional().default(""),
   slug: z.string().min(3, "Slug must be at least 3 characters long"),
+  slugAr: z.string().optional().default(""),
   description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable().default(""),
+  image: z.string().optional().nullable(),
   parentId: z.string().optional().nullable(),
   level: z.number().int().min(1).max(3).default(1),
 });
@@ -34,8 +38,11 @@ export const updateCategorySchema = insertCategorySchema.extend({
 // Schema for inserting brand
 export const insertBrandSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
+  nameAr: z.string().optional().default(""),
   slug: z.string().min(3, "Slug must be at least 3 characters long"),
+  slugAr: z.string().optional().default(""),
   description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable().default(""),
   logo: z.string().optional().nullable(),
   banner: z.string().optional().nullable(),
 });
@@ -48,16 +55,25 @@ export const updateBrandSchema = insertBrandSchema.extend({
 // Schema for inserting products
 export const insertProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
+  nameAr: z.string().optional().default(""),
   slug: z.string().min(3, "Slug must be at least 3 characters long"),
+  slugAr: z.string().optional().default(""),
   categoryId: z.string().min(1, "Category ID is required"),
   brandId: z.string().min(1, "Brand ID is required"),
   description: z
     .string()
     .min(3, "Description must be at least 3 characters long"),
+  descriptionAr: z.string().optional().default(""),
   stock: z.coerce.number(),
   images: z.array(imageSchema).min(1, "At least one image is required"),
-  isFeatured: z.boolean(),
+  isFeatured: z.boolean().default(false),
+  isLimitedTimeOffer: z.boolean().default(false),
+  isNewArrival: z.boolean().default(false),
   price: currency,
+  discount: z.preprocess(
+    (val) => (val === "" ? null : val),
+    z.number().min(0).max(100).optional().nullable()
+  ),
   banner: z.string().nullable().optional(),
 });
 
@@ -94,7 +110,7 @@ export const cartItemSchema = z.object({
   slug: z.string().min(1, "slug is required"),
   qty: z.number().int().nonnegative("Quantity must be a positive number"),
   image: z.string().min(1, "Image is required"),
-  price: currency,
+  price: z.string(), // If this is defined as string, we need to convert our number to string
 });
 
 export const insertCartSchema = z.object({
@@ -215,3 +231,24 @@ export const dealSchema = z.object({
 export const updateDealSchema = dealSchema.extend({
   id: z.string().min(1, "Deal ID is required"),
 });
+
+// Product validator
+export const productValidator = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  nameAr: z.string().optional().default(""),
+  slug: z.string().min(3, "Slug must be at least 3 characters"),
+  slugAr: z.string().optional().default(""),
+  categoryId: z.string().uuid("Invalid category ID"),
+  brandId: z.string().uuid("Invalid brand ID"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  descriptionAr: z.string().optional().default(""),
+  stock: z.number().int().min(0, "Stock cannot be negative"),
+  price: z.number().min(0, "Price cannot be negative"),
+  discount: z.number().min(0).max(100).optional().nullable(),
+  isFeatured: z.boolean().default(false),
+  isLimitedTimeOffer: z.boolean().default(false),
+  isNewArrival: z.boolean().default(false),
+  images: z.array(z.string()).optional(),
+});
+
+export type ProductFormData = z.infer<typeof productValidator>;

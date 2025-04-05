@@ -63,7 +63,7 @@ export async function addItemToCart(data: CartItem) {
       });
 
       // Revalidate product page
-      revalidatePath(`/product/${product.slug}`);
+      revalidatePath(`/products/${product.slug}`);
 
       return {
         success: true,
@@ -77,18 +77,19 @@ export async function addItemToCart(data: CartItem) {
 
       if (existItem) {
         // Check stock
-        if (product.stock < existItem.qty + 1) {
-          throw new Error("Not enough stock");
+        if (product.stock < existItem.qty + item.qty) {
+          throw new Error(`Only ${product.stock} items available in stock`);
         }
 
-        // Increase the quantity
+        // Increase the quantity by the requested amount (not just by 1)
         (cart.items as CartItem[]).find(
           (x) => x.productId === item.productId
-        )!.qty = existItem.qty + 1;
+        )!.qty = existItem.qty + item.qty;
       } else {
         // If item does not exist in cart
         // Check stock
-        if (product.stock < 1) throw new Error("Not enough stock");
+        if (product.stock < item.qty)
+          throw new Error(`Only ${product.stock} items available in stock`);
 
         // Add item to the cart.items
         cart.items.push(item);
@@ -103,11 +104,11 @@ export async function addItemToCart(data: CartItem) {
         },
       });
 
-      revalidatePath(`/product/${product.slug}`);
+      revalidatePath(`/products/${product.slug}`);
 
       return {
         success: true,
-        message: `${product.name} ${
+        message: `${item.qty} ${item.qty > 1 ? "items" : "item"} of ${product.name} ${
           existItem ? "updated in" : "added to"
         } cart`,
       };
@@ -190,7 +191,8 @@ export async function removeItemFromCart(productId: string) {
       },
     });
 
-    revalidatePath(`/product/${product.slug}`);
+    // Fix the path to match your URL structure
+    revalidatePath(`/products/${product.slug}`);
 
     return {
       success: true,

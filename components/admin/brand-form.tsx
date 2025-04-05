@@ -1,12 +1,13 @@
 "use client";
 
+import { brandDefaultValues } from "@/lib/constants";
 import { insertBrandSchema, updateBrandSchema } from "@/lib/validators";
 import { Brand } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { ControllerRenderProps, SubmitHandler, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -15,97 +16,133 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
-import slugify from "slugify";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
+import slugify from "slugify";
 import { createBrand, updateBrand } from "@/lib/actions/brand.actions";
-import { UploadButton } from "@/lib/uploadthing";
 import { Card, CardContent } from "../ui/card";
-import NextImage from "next/image"; // Renamed import to avoid conflict
+import NextImage from "next/image";
+import { UploadButton } from "@/lib/uploadthing";
+import { useState } from "react";
+import { X } from "lucide-react";
 
-const brandDefaultValues = {
-  name: "",
-  slug: "",
-  description: "",
-  logo: null,
-  banner: null,
-};
-
-const BrandForm = ({
-  type,
-  brand,
-  brandId,
-}: {
+// Define the props type for the BrandForm component
+interface BrandFormProps {
   type: "Create" | "Update";
   brand?: Brand;
   brandId?: string;
-}) => {
-  const router = useRouter();
+}
 
+const BrandForm = ({ type, brand, brandId }: BrandFormProps) => {
+  const router = useRouter();
+  const [logoPreview, setLogoPreview] = useState<string | null>(
+    brand?.logo || null
+  );
+  const [bannerPreview, setBannerPreview] = useState<string | null>(
+    brand?.banner || null
+  );
+
+  // Set up the form with validation and default values from constants
   const form = useForm<z.infer<typeof insertBrandSchema>>({
     resolver: zodResolver(
       type === "Create" ? insertBrandSchema : updateBrandSchema
     ),
-    defaultValues: brand && type === "Update" ? brand : brandDefaultValues,
+    defaultValues:
+      type === "Update"
+        ? {
+            name: brand?.name || "",
+            nameAr: brand?.nameAr || "",
+            slug: brand?.slug || "",
+            slugAr: brand?.slugAr || "",
+            description: brand?.description || "",
+            descriptionAr: brand?.descriptionAr || "",
+            logo: brand?.logo || null,
+            banner: brand?.banner || null,
+          }
+        : brandDefaultValues,
   });
 
-  const onSubmit: SubmitHandler<z.infer<typeof insertBrandSchema>> = async (
-    values
-  ) => {
-    // On Create
-    if (type === "Create") {
-      const res = await createBrand(values);
-
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
+  const onSubmit = async (values: z.infer<typeof insertBrandSchema>) => {
+    try {
+      if (type === "Create") {
+        const result = await createBrand(values);
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+        router.push("/admin/brands");
+      } else if (type === "Update" && brandId) {
+        const result = await updateBrand({ id: brandId, ...values });
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
         router.push("/admin/brands");
       }
-    }
-    // On Update
-    if (type === "Update") {
-      if (!brandId) {
-        router.push("/admin/brands");
-        return;
-      }
-      const res = await updateBrand({ ...values, id: brandId });
-
-      if (!res.success) {
-        toast.error(res.message);
-      } else {
-        toast.success(res.message);
-        router.push("/admin/brands");
-      }
+    } catch (error) {
+      console.error("Error submitting brand form:", error);
+      toast.error("Failed to save brand");
     }
   };
 
-  const logo = form.watch("logo");
-  const banner = form.watch("banner");
+  // Generate English slug from name
+  const generateSlug = () => {
+    const name = form.getValues("name");
+    if (name) {
+      form.setValue("slug", slugify(name, { lower: true }));
+    } else {
+      toast.error("Name is required to generate slug");
+    }
+  };
+
+  // Generate Arabic slug from Arabic name
+  const generateArabicSlug = () => {
+    const nameAr = form.getValues("nameAr");
+    if (nameAr) {
+      form.setValue("slugAr", slugify(nameAr, { lower: true }));
+    } else {
+      toast.error("Arabic name is required to generate Arabic slug");
+    }
+  };
+
+  // Handle logo upload
+  const handleLogoUpload = (url: string) => {
+    form.setValue("logo", url);
+    setLogoPreview(url);
+  };
+
+  // Handle banner upload
+  const handleBannerUpload = (url: string) => {
+    form.setValue("banner", url);
+    setBannerPreview(url);
+  };
+
+  // Remove logo
+  const removeLogo = () => {
+    form.setValue("logo", null);
+    setLogoPreview(null);
+  };
+
+  // Remove banner
+  const removeBanner = () => {
+    form.setValue("banner", null);
+    setBannerPreview(null);
+  };
 
   return (
     <Form {...form}>
-      <form
-        method="POST"
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8"
-      >
-        <div className="flex flex-col md:flex-row gap-5">
-          {/* Name */}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* English Name and Slug */}
+        <div className="flex flex-col md:flex-row gap-4">
           <FormField
             control={form.control}
             name="name"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof insertBrandSchema>,
-                "name"
-              >;
-            }) => (
+            render={({ field }) => (
               <FormItem className="w-full">
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Name (English)</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter brand name" {...field} />
                 </FormControl>
@@ -113,160 +150,217 @@ const BrandForm = ({
               </FormItem>
             )}
           />
-          {/* Slug */}
           <FormField
             control={form.control}
             name="slug"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof insertBrandSchema>,
-                "slug"
-              >;
-            }) => (
+            render={({ field }) => (
               <FormItem className="w-full">
-                <FormLabel>Slug</FormLabel>
-                <FormControl>
-                  <div className="relative">
+                <FormLabel>Slug (English)</FormLabel>
+                <div className="flex flex-col space-y-2">
+                  <FormControl>
                     <Input placeholder="Enter slug" {...field} />
-                    <Button
-                      type="button"
-                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-1 mt-2"
-                      onClick={() => {
-                        form.setValue(
-                          "slug",
-                          slugify(form.getValues("name"), { lower: true })
-                        );
-                      }}
-                    >
-                      Generate
-                    </Button>
-                  </div>
-                </FormControl>
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateSlug}
+                    className="self-start"
+                  >
+                    Generate from Name
+                  </Button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        <div className="upload-field flex flex-col md:flex-row gap-5">
-          {/* Logo */}
+        {/* Arabic Name and Slug */}
+        <div className="flex flex-col md:flex-row gap-4">
           <FormField
             control={form.control}
-            name="logo"
+            name="nameAr"
             render={({ field }) => (
               <FormItem className="w-full">
-                <FormLabel>Logo</FormLabel>
-                <Card>
-                  <CardContent className="space-y-2 mt-2">
-                    {logo && (
-                      <div className="relative w-40 h-40 mx-auto">
-                        <NextImage
-                          src={logo}
-                          alt="brand logo"
-                          className="object-contain"
-                          fill
-                        />
-                      </div>
-                    )}
-                    <FormControl>
-                      <UploadButton
-                        endpoint="imageUploader"
-                        onClientUploadComplete={(res: { url: string }[]) => {
-                          // Using field.onChange to properly handle form state
-                          field.onChange(res[0].url);
-                        }}
-                        onUploadError={(error: Error) => {
-                          toast.error(`ERROR! ${error.message}`);
-                        }}
-                      />
-                    </FormControl>
-                  </CardContent>
-                </Card>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Banner */}
-          <FormField
-            control={form.control}
-            name="banner"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Banner</FormLabel>
-                <Card>
-                  <CardContent className="space-y-2 mt-2">
-                    {banner && (
-                      <div className="relative w-full h-40">
-                        <NextImage
-                          src={banner}
-                          alt="brand banner"
-                          className="object-cover"
-                          fill
-                        />
-                      </div>
-                    )}
-                    <FormControl>
-                      <UploadButton
-                        endpoint="imageUploader"
-                        onClientUploadComplete={(res: { url: string }[]) => {
-                          // Using field.onChange to properly handle form state
-                          field.onChange(res[0].url);
-                        }}
-                        onUploadError={(error: Error) => {
-                          toast.error(`ERROR! ${error.message}`);
-                        }}
-                      />
-                    </FormControl>
-                  </CardContent>
-                </Card>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div>
-          {/* Description */}
-          <FormField
-            control={form.control}
-            name="description"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof insertBrandSchema>,
-                "description"
-              >;
-            }) => (
-              <FormItem className="w-full">
-                <FormLabel>Description</FormLabel>
+                <FormLabel>Name (Arabic)</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Enter brand description"
-                    className="resize-none"
+                  <Input
+                    placeholder="أدخل اسم العلامة التجارية"
                     {...field}
-                    value={field.value || ""} // Add this to handle null values
+                    dir="rtl"
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="slugAr"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Slug (Arabic)</FormLabel>
+                <div className="flex flex-col space-y-2">
+                  <FormControl>
+                    <Input placeholder="أدخل الرابط" {...field} dir="rtl" />
+                  </FormControl>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateArabicSlug}
+                    className="self-start"
+                  >
+                    Generate from Arabic Name
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <div>
-          <Button
-            type="submit"
-            size="lg"
-            disabled={form.formState.isSubmitting}
-            className="button col-span-2 w-full"
-          >
-            {form.formState.isSubmitting ? "Submitting..." : `${type} Brand`}
-          </Button>
-        </div>
+        {/* Logo Upload */}
+        <FormField
+          control={form.control}
+          name="logo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Logo</FormLabel>
+              <Card>
+                <CardContent className="pt-4">
+                  {logoPreview && (
+                    <div className="relative w-40 h-40 mx-auto mb-4">
+                      <NextImage
+                        src={logoPreview}
+                        alt="Brand logo"
+                        fill
+                        className="object-contain"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={removeLogo}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <FormControl>
+                    <UploadButton
+                      endpoint="imageUploader"
+                      onClientUploadComplete={(res: { url: string }[]) => {
+                        handleLogoUpload(res[0].url);
+                        field.onChange(res[0].url); // Use field.onChange to update the form
+                      }}
+                      onUploadError={(error: Error) => {
+                        toast.error(`ERROR! ${error.message}`);
+                      }}
+                    />
+                  </FormControl>
+                </CardContent>
+              </Card>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Banner Upload */}
+        <FormField
+          control={form.control}
+          name="banner"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Banner</FormLabel>
+              <Card>
+                <CardContent className="pt-4">
+                  {bannerPreview && (
+                    <div className="relative w-full h-40 mb-4">
+                      <NextImage
+                        src={bannerPreview}
+                        alt="Brand banner"
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={removeBanner}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <FormControl>
+                    <UploadButton
+                      endpoint="imageUploader"
+                      onClientUploadComplete={(res: { url: string }[]) => {
+                        handleBannerUpload(res[0].url);
+                        field.onChange(res[0].url); // Use field.onChange to update the form
+                      }}
+                      onUploadError={(error: Error) => {
+                        toast.error(`ERROR! ${error.message}`);
+                      }}
+                    />
+                  </FormControl>
+                </CardContent>
+              </Card>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* English Description */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (English)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter brand description"
+                  className="resize-none"
+                  {...field}
+                  value={field.value || ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Arabic Description */}
+        <FormField
+          control={form.control}
+          name="descriptionAr"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (Arabic)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="أدخل وصف العلامة التجارية"
+                  className="resize-none text-right"
+                  {...field}
+                  value={field.value || ""}
+                  dir="rtl"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? "Submitting..." : `${type} Brand`}
+        </Button>
       </form>
     </Form>
   );

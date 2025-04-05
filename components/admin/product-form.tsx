@@ -188,6 +188,19 @@ const ProductForm = ({
     form.setValue("images", reindexedImages);
   };
 
+  // Generate Arabic slug from Arabic name
+  const generateArabicSlug = () => {
+    const arabicName = form.getValues("nameAr");
+    if (arabicName && arabicName.trim() !== "") {
+      form.setValue(
+        "slugAr",
+        slugify(arabicName, { lower: true, strict: true })
+      );
+    } else {
+      toast.error("Arabic name is empty. Please enter an Arabic name first.");
+    }
+  };
+
   if (isLoading) {
     return <div>Loading categories and brands...</div>;
   }
@@ -199,8 +212,8 @@ const ProductForm = ({
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-8"
       >
+        {/* English name and slug */}
         <div className="flex flex-col md:flex-row gap-5">
-          {/* Name */}
           <FormField
             control={form.control}
             name="name"
@@ -213,7 +226,7 @@ const ProductForm = ({
               >;
             }) => (
               <FormItem className="w-full">
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Name (English)</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter product name" {...field} />
                 </FormControl>
@@ -221,7 +234,6 @@ const ProductForm = ({
               </FormItem>
             )}
           />
-          {/* Slug */}
           <FormField
             control={form.control}
             name="slug"
@@ -234,7 +246,7 @@ const ProductForm = ({
               >;
             }) => (
               <FormItem className="w-full">
-                <FormLabel>Slug</FormLabel>
+                <FormLabel>Slug (English)</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input placeholder="Enter slug" {...field} />
@@ -257,6 +269,60 @@ const ProductForm = ({
             )}
           />
         </div>
+
+        {/* Arabic name and slug */}
+        <div className="flex flex-col md:flex-row gap-5">
+          <FormField
+            control={form.control}
+            name="nameAr"
+            render={({
+              field,
+            }: {
+              field: ControllerRenderProps<
+                z.infer<typeof insertProductSchema>,
+                "nameAr"
+              >;
+            }) => (
+              <FormItem className="w-full">
+                <FormLabel>Name (Arabic)</FormLabel>
+                <FormControl>
+                  <Input placeholder="أدخل اسم المنتج" {...field} dir="rtl" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="slugAr"
+            render={({
+              field,
+            }: {
+              field: ControllerRenderProps<
+                z.infer<typeof insertProductSchema>,
+                "slugAr"
+              >;
+            }) => (
+              <FormItem className="w-full">
+                <FormLabel>Slug (Arabic)</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input placeholder="أدخل الرابط" {...field} dir="rtl" />
+                    <Button
+                      type="button"
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-1 mt-2"
+                      onClick={generateArabicSlug}
+                    >
+                      Generate
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <div className="flex flex-col md:flex-row gap-5">
           {/* Category */}
           <FormField
@@ -315,6 +381,7 @@ const ProductForm = ({
             )}
           />
         </div>
+
         <div className="flex flex-col md:flex-row gap-5">
           {/* Price */}
           <FormField
@@ -332,6 +399,31 @@ const ProductForm = ({
                 <FormLabel>Price</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter product price" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {/* Discount */}
+          <FormField
+            control={form.control}
+            name="discount"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Discount (%)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="Enter discount percentage"
+                    value={field.value === null ? "" : field.value}
+                    onChange={(e) => {
+                      const value =
+                        e.target.value === ""
+                          ? null
+                          : parseFloat(e.target.value);
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -359,6 +451,7 @@ const ProductForm = ({
             )}
           />
         </div>
+
         <div className="uplaod-field">
           {/* Images */}
           <FormField
@@ -411,7 +504,9 @@ const ProductForm = ({
             )}
           />
         </div>
-        <div className="upload-field">
+
+        {/* Product flags checkboxes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* isFeatured */}
           <FormField
             control={form.control}
@@ -458,9 +553,46 @@ const ProductForm = ({
               </FormItem>
             )}
           />
+
+          {/* isLimitedTimeOffer */}
+          <FormField
+            control={form.control}
+            name="isLimitedTimeOffer"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-2">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormLabel>Limited Time Offer</FormLabel>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* isNewArrival */}
+          <FormField
+            control={form.control}
+            name="isNewArrival"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-2">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormLabel>New Arrival</FormLabel>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
+
+        {/* English description */}
         <div>
-          {/* Description */}
           <FormField
             control={form.control}
             name="description"
@@ -473,11 +605,12 @@ const ProductForm = ({
               >;
             }) => (
               <FormItem className="w-full">
-                <FormLabel>Description</FormLabel>
+                <FormLabel>Description (English)</FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Enter product description"
                     className="resize-none"
+                    rows={5}
                     {...field}
                   />
                 </FormControl>
@@ -486,6 +619,37 @@ const ProductForm = ({
             )}
           />
         </div>
+
+        {/* Arabic description */}
+        <div>
+          <FormField
+            control={form.control}
+            name="descriptionAr"
+            render={({
+              field,
+            }: {
+              field: ControllerRenderProps<
+                z.infer<typeof insertProductSchema>,
+                "descriptionAr"
+              >;
+            }) => (
+              <FormItem className="w-full">
+                <FormLabel>Description (Arabic)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="أدخل وصف المنتج"
+                    className="resize-none text-right"
+                    rows={5}
+                    {...field}
+                    dir="rtl"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <div>
           <Button
             type="submit"

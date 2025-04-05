@@ -78,18 +78,33 @@ export async function generateMetadata(props: {
   }
 }
 
-const SearchPage = async (props: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) => {
-  const searchParams = await props.searchParams;
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: {
+    query?: string;
+    category?: string;
+    price?: string;
+    rating?: string;
+    page?: string;
+    sort?: string;
+    limit?: string;
+    isLimitedTimeOffer?: string;
+    isNewArrival?: string;
+  };
+}) {
   const {
-    q = "all",
+    query: q = "all",
     category = "all",
     price = "all",
     rating = "all",
     sort = "newest",
     page = "1",
   } = searchParams;
+
+  // Parse additional filter parameters
+  const isLimitedTimeOffer = searchParams.isLimitedTimeOffer === "true";
+  const isNewArrival = searchParams.isNewArrival === "true";
 
   // Construct filter url - modified to support removing individual filters
   const getFilterUrl = ({
@@ -163,6 +178,8 @@ const SearchPage = async (props: {
     rating: rating && rating !== "all" ? rating.toString() : undefined,
     sort: sort && sort !== "newest" ? sort.toString() : undefined,
     page: Number(page || "1"),
+    isLimitedTimeOffer,
+    isNewArrival,
   });
 
   // Use the correct method to get categories with the expected format
@@ -312,7 +329,15 @@ const SearchPage = async (props: {
               </div>
             ) : (
               products.data.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    ...product,
+                    discount: product.discount
+                      ? Number(product.discount)
+                      : null,
+                  }}
+                />
               ))
             )}
           </div>
@@ -329,6 +354,4 @@ const SearchPage = async (props: {
       </div>
     </div>
   );
-};
-
-export default SearchPage;
+}

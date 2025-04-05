@@ -7,12 +7,15 @@ import ViewAllProductsButton from "@/components/view-all-products-button";
 import { getActiveDeals } from "@/lib/actions/deal-actions";
 import {
   getFeaturedProducts,
-  getLatestProducts,
+  getNewArrivalProducts,
+  getLimitedTimeOfferProducts,
 } from "@/lib/actions/product.actions";
 
 export default async function Home() {
+  // Fetch products with proper typing
   const featuredProducts = await getFeaturedProducts();
-  const latestProducts = await getLatestProducts();
+  const newArrivalProducts = await getNewArrivalProducts();
+  const limitedTimeOfferProducts = await getLimitedTimeOfferProducts();
 
   // Fetch active deals for the homepage
   const { deals: activeDeals } = await getActiveDeals();
@@ -26,7 +29,22 @@ export default async function Home() {
       {featuredProducts.length > 0 && (
         <ProductCarousel data={featuredProducts} />
       )}
-      <ProductList data={latestProducts} title="Newest Arrivals" limit={4} />
+      {newArrivalProducts.length > 0 && (
+        <ProductList
+          data={newArrivalProducts}
+          title="New Arrivals"
+          limit={12}
+          carousel={true}
+        />
+      )}
+      {limitedTimeOfferProducts.length > 0 && (
+        <ProductList
+          data={limitedTimeOfferProducts}
+          title="Limited Time Offers"
+          limit={12}
+          carousel={true}
+        />
+      )}
       <ViewAllProductsButton />
       <IconBoxes />
     </>

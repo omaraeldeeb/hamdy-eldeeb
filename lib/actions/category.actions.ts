@@ -11,10 +11,9 @@ export async function getAllCategories() {
   const data = await prisma.category.findMany({
     orderBy: { name: "asc" },
     include: {
-      children: true,
       parent: true,
       _count: {
-        select: { products: true },
+        select: { products: true, children: true },
       },
     },
   });
@@ -43,7 +42,6 @@ export async function getCategoryById(id: string) {
   const data = await prisma.category.findUnique({
     where: { id },
     include: {
-      children: true,
       parent: true,
       _count: {
         select: { products: true },
@@ -54,12 +52,13 @@ export async function getCategoryById(id: string) {
   return convertToPlainObject(data);
 }
 
-// Get category by slug
+// Get category by slug (supports both normal and Arabic slugs)
 export async function getCategoryBySlug(slug: string) {
   const data = await prisma.category.findFirst({
-    where: { slug },
+    where: {
+      OR: [{ slug: slug }, { slugAr: slug }],
+    },
     include: {
-      children: true,
       parent: true,
       _count: {
         select: { products: true },
@@ -123,34 +122,12 @@ export async function getCategoryWithChildrenRecursive(id: string) {
   };
 }
 
-// Create a category
+// Create a new category
 export async function createCategory(
   data: z.infer<typeof insertCategorySchema>
 ) {
   try {
     const categoryData = insertCategorySchema.parse(data);
-
-    // Set the level based on parentId
-    if (categoryData.parentId) {
-      const parentCategory = await prisma.category.findUnique({
-        where: { id: categoryData.parentId },
-      });
-
-      if (parentCategory) {
-        categoryData.level = parentCategory.level + 1;
-
-        // Ensure we don't exceed max level
-        if (categoryData.level > 3) {
-          throw new Error("Cannot create category deeper than level 3");
-        }
-      } else {
-        throw new Error("Parent category not found");
-      }
-    } else {
-      // Root category
-      categoryData.level = 1;
-    }
-
     await prisma.category.create({ data: categoryData });
 
     revalidatePath("/admin/categories");
@@ -234,9 +211,8 @@ export async function deleteCategory(id: string) {
     const categoryExists = await prisma.category.findUnique({
       where: { id },
       include: {
-        children: true,
         _count: {
-          select: { products: true },
+          select: { products: true, children: true },
         },
       },
     });
@@ -251,7 +227,7 @@ export async function deleteCategory(id: string) {
     }
 
     // Check if category has children
-    if (categoryExists.children.length > 0) {
+    if (categoryExists._count.children > 0) {
       throw new Error("Cannot delete category with subcategories");
     }
 
@@ -329,4 +305,38 @@ export async function getPaginatedCategories({
     totalPages: Math.ceil(totalCount / limit),
     totalCount,
   };
+}
+
+// Get main categories only
+export async function getMainCategories() {
+  const data = await prisma.category.findMany({
+    where: {
+      level: 1,
+    },
+    orderBy: { name: "asc" },
+    include: {
+      _count: {
+        select: { products: true, children: true },
+      },
+    },
+  });
+
+  return convertToPlainObject(data);
+}
+
+// Get sub-categories for a parent category
+export async function getSubCategories(parentId: string) {
+  const data = await prisma.category.findMany({
+    where: {
+      parentId,
+    },
+    orderBy: { name: "asc" },
+    include: {
+      _count: {
+        select: { products: true, children: true },
+      },
+    },
+  });
+
+  return convertToPlainObject(data);
 }

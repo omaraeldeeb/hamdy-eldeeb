@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { insertProductSchema, updateProductSchema } from "../validators";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { Product } from "@/types";
 
 // Get latest products
 export async function getLatestProducts() {
@@ -24,10 +25,12 @@ export async function getLatestProducts() {
   return convertToPlainObject(data);
 }
 
-// Get single product by it's slug
+// Get single product by it's slug (support both normal and Arabic slugs)
 export async function getProductBySlug(slug: string) {
   return await prisma.product.findFirst({
-    where: { slug: slug },
+    where: {
+      OR: [{ slug: slug }, { slugAr: slug }],
+    },
     include: {
       category: true,
       brand: true,
@@ -53,7 +56,7 @@ export async function getProductById(productId: string) {
   return convertToPlainObject(data);
 }
 
-// Get all products
+// Get all products with enhanced query support
 export async function getAllProducts({
   query,
   limit = PAGE_SIZE,
@@ -62,6 +65,8 @@ export async function getAllProducts({
   price,
   rating,
   sort,
+  isLimitedTimeOffer,
+  isNewArrival,
 }: {
   query: string;
   limit?: number;
@@ -70,15 +75,27 @@ export async function getAllProducts({
   price?: string;
   rating?: string;
   sort?: string;
+  isLimitedTimeOffer?: boolean;
+  isNewArrival?: boolean;
 }) {
-  // Query filter
+  // Query filter - now supports both English and Arabic names
   const queryFilter: Prisma.ProductWhereInput =
     query && query !== "all"
       ? {
-          name: {
-            contains: query,
-            mode: "insensitive",
-          } as Prisma.StringFilter,
+          OR: [
+            {
+              name: {
+                contains: query,
+                mode: "insensitive",
+              } as Prisma.StringFilter,
+            },
+            {
+              nameAr: {
+                contains: query,
+                mode: "insensitive",
+              } as Prisma.StringFilter,
+            },
+          ],
         }
       : {};
 
@@ -107,12 +124,22 @@ export async function getAllProducts({
         }
       : {};
 
+  // Special offers filter
+  const limitedTimeOfferFilter = isLimitedTimeOffer
+    ? { isLimitedTimeOffer: true }
+    : {};
+
+  // New arrivals filter
+  const newArrivalFilter = isNewArrival ? { isNewArrival: true } : {};
+
   const data = await prisma.product.findMany({
     where: {
       ...queryFilter,
       ...categoryFilter,
       ...priceFilter,
       ...ratingFilter,
+      ...limitedTimeOfferFilter,
+      ...newArrivalFilter,
     },
     orderBy:
       sort === "lowest"
@@ -121,7 +148,9 @@ export async function getAllProducts({
           ? { price: "desc" }
           : sort === "rating"
             ? { rating: "desc" }
-            : { createdAt: "desc" },
+            : sort === "discount"
+              ? { discount: "desc" }
+              : { createdAt: "desc" },
     skip: (page - 1) * limit,
     take: limit,
     include: {
@@ -139,6 +168,8 @@ export async function getAllProducts({
       ...categoryFilter,
       ...priceFilter,
       ...ratingFilter,
+      ...limitedTimeOfferFilter,
+      ...newArrivalFilter,
     },
   });
 
@@ -262,7 +293,7 @@ export async function getAllCategoriesFromProducts() {
 }
 
 // Get featured products
-export async function getFeaturedProducts() {
+export async function getFeaturedProducts(): Promise<Product[]> {
   const data = await prisma.product.findMany({
     where: { isFeatured: true },
     orderBy: { createdAt: "desc" },
@@ -276,5 +307,65 @@ export async function getFeaturedProducts() {
     },
   });
 
-  return convertToPlainObject(data);
+  // Process the data to ensure consistent structure
+  const processedData = convertToPlainObject(data);
+  return processedData.map((product) => ({
+    ...product,
+    // Ensure numerical values are correctly handled
+    price: Number(product.price),
+    discount: product.discount ? Number(product.discount) : null,
+    rating: Number(product.rating),
+  })) as Product[];
+}
+
+// Get limited time offer products
+export async function getLimitedTimeOfferProducts(): Promise<Product[]> {
+  const data = await prisma.product.findMany({
+    where: { isLimitedTimeOffer: true },
+    orderBy: { createdAt: "desc" },
+    take: 12,
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+
+  // Process the data to ensure consistent structure
+  const processedData = convertToPlainObject(data);
+  return processedData.map((product) => ({
+    ...product,
+    // Ensure numerical values are correctly handled
+    price: Number(product.price),
+    discount: product.discount ? Number(product.discount) : null,
+    rating: Number(product.rating),
+  })) as Product[];
+}
+
+// Get new arrival products
+export async function getNewArrivalProducts(): Promise<Product[]> {
+  const data = await prisma.product.findMany({
+    where: { isNewArrival: true },
+    orderBy: { createdAt: "desc" },
+    take: 12,
+    include: {
+      category: true,
+      brand: true,
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+
+  // Process the data to ensure consistent structure
+  const processedData = convertToPlainObject(data);
+  return processedData.map((product) => ({
+    ...product,
+    // Ensure numerical values are correctly handled
+    price: Number(product.price),
+    discount: product.discount ? Number(product.discount) : null,
+    rating: Number(product.rating),
+  })) as Product[];
 }

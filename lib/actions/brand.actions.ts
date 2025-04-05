@@ -34,10 +34,12 @@ export async function getBrandById(id: string) {
   return convertToPlainObject(data);
 }
 
-// Get brand by slug
+// Get brand by slug (supports both normal and Arabic slugs)
 export async function getBrandBySlug(slug: string) {
   const data = await prisma.brand.findFirst({
-    where: { slug },
+    where: {
+      OR: [{ slug: slug }, { slugAr: slug }],
+    },
     include: {
       _count: {
         select: { products: true },
@@ -65,7 +67,7 @@ export async function createBrand(data: z.infer<typeof insertBrandSchema>) {
 export async function updateBrand(data: z.infer<typeof updateBrandSchema>) {
   try {
     const brandData = updateBrandSchema.parse(data);
-    const { id, ...updateData } = brandData;
+    const { id, ...rest } = brandData;
 
     const brandExists = await prisma.brand.findUnique({
       where: { id },
@@ -77,7 +79,7 @@ export async function updateBrand(data: z.infer<typeof updateBrandSchema>) {
 
     await prisma.brand.update({
       where: { id },
-      data: updateData,
+      data: rest,
     });
 
     revalidatePath("/admin/brands");

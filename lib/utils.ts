@@ -6,9 +6,75 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Type for possible Decimal-like objects
+interface DecimalLike {
+  toString(): string;
+  s?: number;
+  e?: number;
+  d?: unknown[];
+  toNumber?: () => number;
+}
+
+// Check if value is Decimal-like
+function isDecimalLike(value: unknown): value is DecimalLike {
+  if (typeof value !== "object" || value === null) return false;
+
+  // Check for constructor name
+  const constructorName = (value as object).constructor?.name;
+  if (constructorName === "Decimal" || constructorName === "PrismaDecimal") {
+    return true;
+  }
+
+  // Check for toNumber method
+  if (
+    "toNumber" in value &&
+    typeof (value as { toNumber: unknown }).toNumber === "function"
+  ) {
+    return true;
+  }
+
+  // Check for Decimal structure
+  if (
+    "s" in value &&
+    typeof (value as { s: unknown }).s === "number" &&
+    "e" in value &&
+    typeof (value as { e: unknown }).e === "number" &&
+    "d" in value &&
+    Array.isArray((value as { d: unknown }).d)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 // Convert prisma object into regular js object
-export function convertToPlainObject<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value));
+export function convertToPlainObject<T>(data: T): T {
+  return JSON.parse(
+    JSON.stringify(data, (key, value) => {
+      // Check if value is null or undefined
+      if (value === null || value === undefined) {
+        return value;
+      }
+
+      // Convert Decimal objects to numbers
+      if (isDecimalLike(value)) {
+        try {
+          // Try to use toNumber method if available
+          if (typeof value.toNumber === "function") {
+            return value.toNumber();
+          }
+
+          // Otherwise, convert to string and parse as float
+          return parseFloat(String(value));
+        } catch (error) {
+          console.error("Error converting Decimal:", error);
+          return 0; // Fallback value
+        }
+      }
+      return value;
+    })
+  );
 }
 
 // Format number with decimal places
@@ -17,33 +83,49 @@ export function formatNumberWithDecimal(num: number): string {
   return decimal ? `${int}.${decimal.padEnd(2, "0")}` : `${int}.00`;
 }
 
+// Type for possible error objects
+interface ErrorWithMessage {
+  message: string | unknown;
+  name?: string;
+  errors?: Record<string, { message: string }>;
+  meta?: {
+    target?: string[];
+  };
+  code?: string;
+}
+
 // Format errors
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function formatError(error: any) {
-  if (error.name === "ZodError") {
+export function formatError(error: unknown): string {
+  const err = error as ErrorWithMessage;
+
+  if (err.name === "ZodError" && err.errors) {
     // Handle Zod error
-    const fieldErrors = Object.keys(error.errors).map(
-      (field) => error.errors[field].message
+    const fieldErrors = Object.keys(err.errors).map(
+      (field) => err.errors?.[field].message ?? "Validation error"
     );
 
     return fieldErrors.join(". ");
   } else if (
-    error.name === "PrismaClientKnownRequestError" &&
-    error.code === "P2002"
+    err.name === "PrismaClientKnownRequestError" &&
+    err.code === "P2002" &&
+    err.meta?.target
   ) {
     // Handle Prisma error
-    const field = error.meta?.target ? error.meta.target[0] : "Field";
+    const field = err.meta.target[0] ?? "Field";
     return `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
   } else {
     // Handle other errors
-    return typeof error.message === "string"
-      ? error.message
-      : JSON.stringify(error.message);
+    const errorMessage =
+      typeof err.message === "string"
+        ? err.message
+        : "An unknown error occurred";
+
+    return errorMessage;
   }
 }
 
 // Round number to 2 decimal places
-export function round2(value: number | string) {
+export function round2(value: number | string): number {
   if (typeof value === "number") {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   } else if (typeof value === "string") {
@@ -62,12 +144,12 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-US", {
 // Format Number
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-US");
 
-export function formatNumber(number: number) {
+export function formatNumber(number: number): string {
   return NUMBER_FORMATTER.format(number);
 }
 
 // Format currency using a formatter
-export function formatCurrency(amount: number | string | null) {
+export function formatCurrency(amount: number | string | null): string {
   if (typeof amount === "number") {
     return CURRENCY_FORMATTER.format(amount);
   } else if (typeof amount === "string") {
@@ -78,12 +160,18 @@ export function formatCurrency(amount: number | string | null) {
 }
 
 // Shorten UUID
-export function formatId(id: string) {
+export function formatId(id: string): string {
   return `...${id.substring(id.length - 6)}`;
 }
 
 // Format data and times
-export const formatDateTime = (dateString: Date) => {
+export const formatDateTime = (
+  dateString: Date
+): {
+  dateTime: string;
+  dateOnly: string;
+  timeOnly: string;
+} => {
   const dateTimeOptions: Intl.DateTimeFormatOptions = {
     month: "short", // abbreviated month name (e.g., 'Oct')
     year: "numeric", // abbreviated month name (e.g., 'Oct')
@@ -131,7 +219,7 @@ export function formUrlQuery({
   params: string;
   key: string;
   value: string | null;
-}) {
+}): string {
   // Parse the query string into an object
   const query = qs.parse(params);
 

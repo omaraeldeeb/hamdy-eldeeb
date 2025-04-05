@@ -9,18 +9,24 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  slug        String   @unique(map: "product_slug_idx")
-  categoryId  String   @db.Uuid
-  brandId     String   @db.Uuid
-  description String
-  stock       Int
-  price       Decimal  @default(0) @db.Decimal(12, 2)
-  rating      Decimal  @default(0) @db.Decimal(3, 2)
-  numReviews  Int      @default(0)
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  nameAr             String   @default("")
+  slug               String   @unique(map: "product_slug_idx")
+  slugAr             String   @unique(map: "product_slug_ar_idx") @default("")
+  categoryId         String   @db.Uuid
+  brandId            String   @db.Uuid
+  description        String
+  descriptionAr      String   @default("")
+  stock              Int
+  price              Decimal  @default(0) @db.Decimal(12, 2)
+  discount           Decimal? @db.Decimal(5, 2)
+  rating             Decimal  @default(0) @db.Decimal(3, 2)
+  numReviews         Int      @default(0)
+  isFeatured         Boolean  @default(false)
+  isLimitedTimeOffer Boolean  @default(false)
+  isNewArrival       Boolean  @default(false)
+  createdAt          DateTime @default(now()) @db.Timestamp(6)
 
   // Relationships
   category  Category    @relation(fields: [categoryId], references: [id])
@@ -33,6 +39,9 @@ model Product {
   @@index([categoryId])
   @@index([brandId])
   @@index([isFeatured])
+  @@index([isLimitedTimeOffer])
+  @@index([isNewArrival])
+  @@index([discount])
 }
 
 model Image {
@@ -52,15 +61,19 @@ model Image {
 }
 
 model Category {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  slug        String   @unique
-  description String?
-  parentId    String?  @db.Uuid
-  level       Int      @default(1) // 1=main, 2=sub, 3=sub-sub
-  createdAt   DateTime @default(now()) @db.Timestamp(6)
-
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  nameAr        String   @default("")
+  slug          String   @unique
+  slugAr        String   @unique @default("")
+  description   String?
+  descriptionAr String?  @default("")
+  image         String? // URL for the category image
+  parentId      String?  @db.Uuid
+  level         Int      @default(1) // 1=main, 2=sub, 3=sub-sub
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
   // Relationships
+
   parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
   children Category[] @relation("SubCategories")
   products Product[]
@@ -71,19 +84,23 @@ model Category {
 }
 
 model Brand {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  logo        String? // URL for the logo image
-  banner      String? // URL for the banner image
-  createdAt   DateTime @default(now()) @db.Timestamp(6)
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String   @unique
+  nameAr        String   @unique @default("")
+  slug          String   @unique
+  slugAr        String   @unique @default("")
+  description   String?
+  descriptionAr String?  @default("")
+  logo          String? // URL for the logo image
+  banner        String? // URL for the banner image
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
 
   // Relationships
   products Product[]
 
   // Indexes
   @@index([name])
+  @@index([nameAr])
 }
 
 model User {

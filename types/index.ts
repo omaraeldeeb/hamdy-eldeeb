@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  insertProductSchema,
   insertCartSchema,
   cartItemSchema,
   shippingAddressSchema,
@@ -12,7 +11,9 @@ import {
   insertCategorySchema,
   insertBrandSchema,
   dealSchema,
+  productValidator,
 } from "@/lib/validators";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export type ProductImage = z.infer<typeof imageSchema> & {
   id: string;
@@ -22,9 +23,14 @@ export type ProductImage = z.infer<typeof imageSchema> & {
 
 export type Category = z.infer<typeof insertCategorySchema> & {
   id: string;
+  nameAr: string;
+  slugAr: string;
+  description?: string | null; // Allow null here
+  descriptionAr?: string | null; // Allow null here to match API response
+  image?: string | null; // Image URL for the category
   createdAt: Date;
   children?: Category[];
-  parent?: Category;
+  parent?: Category | null; // Allow null for parent
   _count?: {
     children?: number;
     products?: number;
@@ -33,24 +39,47 @@ export type Category = z.infer<typeof insertCategorySchema> & {
 
 export type Brand = z.infer<typeof insertBrandSchema> & {
   id: string;
+  nameAr: string;
+  slugAr: string;
+  description?: string | null; // Allow null here
+  descriptionAr?: string | null; // Allow null here to match API response
   createdAt: Date;
   _count?: {
     products?: number;
   };
 };
 
-export type Product = z.infer<typeof insertProductSchema> & {
+// Using the productValidator schema as a base for our Product type
+export type Product = {
   id: string;
-  rating: string;
+  name: string;
+  nameAr: string;
+  slug: string;
+  slugAr: string;
+  description: string;
+  descriptionAr: string;
+  categoryId: string;
+  brandId: string;
+  stock: number;
+  price: number | Decimal | { toString(): string };
+  discount: number | Decimal | { toString(): string } | null;
+  rating: number | Decimal | { toString(): string };
   numReviews: number;
+  isFeatured: boolean;
+  isLimitedTimeOffer: boolean;
+  isNewArrival: boolean;
   createdAt: Date;
   category: Category;
   brand: Brand;
-  images: ProductImage[];
+  images: Array<ProductImage | string>;
+  banner?: string | null;
 };
 
 export type Cart = z.infer<typeof insertCartSchema>;
+
+// Check if cartItemSchema expects price as a string and update the type accordingly
 export type CartItem = z.infer<typeof cartItemSchema>;
+
 export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
 export type OrderItem = z.infer<typeof insertOrderItemSchema>;
 export type Order = z.infer<typeof insertOrderSchema> & {
@@ -77,3 +106,5 @@ export type Deal = z.infer<typeof dealSchema> & {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type ProductForm = z.infer<typeof productValidator>;
