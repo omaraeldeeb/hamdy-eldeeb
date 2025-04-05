@@ -7,14 +7,13 @@ import { ProductImage } from "@/types";
 import AddToCartButton from "@/components/shared/product/add-to-cart-button";
 
 interface ProductDetailsProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
-export default async function ProductDetailsPage({
-  params,
-}: ProductDetailsProps) {
+export default async function ProductDetailsPage(props: ProductDetailsProps) {
+  const params = await props.params;
   const { slug } = params;
   const productData = await getProductBySlug(slug);
 

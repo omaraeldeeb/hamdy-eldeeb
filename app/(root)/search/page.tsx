@@ -78,21 +78,22 @@ export async function generateMetadata(props: {
   }
 }
 
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: {
-    query?: string;
-    category?: string;
-    price?: string;
-    rating?: string;
-    page?: string;
-    sort?: string;
-    limit?: string;
-    isLimitedTimeOffer?: string;
-    isNewArrival?: string;
-  };
-}) {
+export default async function SearchPage(
+  props: {
+    searchParams: Promise<{
+      query?: string;
+      category?: string;
+      price?: string;
+      rating?: string;
+      page?: string;
+      sort?: string;
+      limit?: string;
+      isLimitedTimeOffer?: string;
+      isNewArrival?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const {
     query: q = "all",
     category = "all",
