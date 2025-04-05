@@ -95,8 +95,14 @@ const CategoryForm = ({ type, category, categoryId }: CategoryFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof insertCategorySchema>) => {
     try {
+      // Transform the "none" value to null for parentId
+      const formData = {
+        ...values,
+        parentId: values.parentId === "none" ? null : values.parentId,
+      };
+
       if (type === "Create") {
-        const result = await createCategory(values);
+        const result = await createCategory(formData);
         if (!result.success) {
           toast.error(result.message);
           return;
@@ -104,7 +110,7 @@ const CategoryForm = ({ type, category, categoryId }: CategoryFormProps) => {
         toast.success(result.message);
         router.push("/admin/categories");
       } else if (type === "Update" && categoryId) {
-        const result = await updateCategory({ id: categoryId, ...values });
+        const result = await updateCategory({ id: categoryId, ...formData });
         if (!result.success) {
           toast.error(result.message);
           return;
@@ -262,7 +268,7 @@ const CategoryForm = ({ type, category, categoryId }: CategoryFormProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">None (Root Category)</SelectItem>
+                  <SelectItem value="none">None (Root Category)</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
