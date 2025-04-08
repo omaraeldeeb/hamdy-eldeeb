@@ -24,6 +24,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "../ui/form";
 import slugify from "slugify";
 import { Input } from "../ui/input";
@@ -142,27 +143,24 @@ const ProductForm = ({
     defaultValues: type === "Update" ? defaultValues : productDefaultValues,
   });
 
+  // Modified to integrate with the banner feature
   const onSubmit: SubmitHandler<ProductFormSchema> = async (values) => {
     try {
-      // Create a copy of values for submission
-      const submissionData = { ...values };
-      const banner = submissionData.banner;
-
-      // Remove banner from submission if not needed
-      delete submissionData.banner;
-
-      // Add banner back to submission data if product is featured
-      if (submissionData.isFeatured && banner) {
-        (
-          submissionData as z.infer<typeof insertProductSchema> & {
-            banner?: string;
-          }
-        ).banner = banner;
+      // Ensure featured products have banner
+      if (
+        values.isFeatured &&
+        (!values.banner || values.banner.trim() === "")
+      ) {
+        form.setError("banner", {
+          type: "manual",
+          message: "Banner image is required for featured products",
+        });
+        return;
       }
 
-      // On Create
+      // Handle submission as normal
       if (type === "Create") {
-        const res = await createProduct(submissionData);
+        const res = await createProduct(values);
         if (!res.success) {
           toast.error(res.message);
         } else {
@@ -171,10 +169,9 @@ const ProductForm = ({
         }
       }
 
-      // On Update
       if (type === "Update" && productId) {
         const res = await updateProduct({
-          ...submissionData,
+          ...values,
           id: productId,
         });
 
@@ -228,6 +225,9 @@ const ProductForm = ({
       toast.error("Arabic name is empty. Please enter an Arabic name first.");
     }
   };
+
+  // Add a watch for the isFeatured field
+  const watchIsFeatured = form.watch("isFeatured");
 
   if (isLoading) {
     return <div>Loading categories and brands...</div>;
@@ -545,39 +545,29 @@ const ProductForm = ({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked);
+
+                        // If setting to featured, verify banner exists
+                        if (
+                          checked &&
+                          (!form.getValues("banner") ||
+                            form.getValues("banner")?.trim() === "")
+                        ) {
+                          form.setError("banner", {
+                            type: "manual",
+                            message:
+                              "Banner image is required for featured products",
+                          });
+                        } else {
+                          form.clearErrors("banner");
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormLabel>Featured Product</FormLabel>
                 </div>
-                {field.value && (
-                  <div>
-                    <FormLabel>Banner Image</FormLabel>
-                    <Card>
-                      <CardContent className="pt-4">
-                        {form.getValues("banner") && (
-                          <div className="relative w-full h-40 mb-4">
-                            <NextImage
-                              src={form.getValues("banner")!}
-                              alt="banner image"
-                              className="object-cover rounded-md"
-                              fill
-                            />
-                          </div>
-                        )}
-                        <UploadButton
-                          endpoint="imageUploader"
-                          onClientUploadComplete={(res: { url: string }[]) => {
-                            form.setValue("banner", res[0].url);
-                          }}
-                          onUploadError={(error: Error) => {
-                            toast.error(`ERROR! ${error.message}`);
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -677,6 +667,59 @@ const ProductForm = ({
             )}
           />
         </div>
+
+        {/* Add a banner field to the form */}
+        <FormField
+          control={form.control}
+          name="banner"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Banner Image{" "}
+                {watchIsFeatured && <span className="text-destructive">*</span>}
+              </FormLabel>
+              <FormDescription>
+                Upload a banner image for featured products (required when
+                product is featured)
+              </FormDescription>
+              {field.value ? (
+                <div className="relative w-full aspect-[16/5] mt-2 mb-4 rounded-md overflow-hidden">
+                  <NextImage
+                    src={field.value}
+                    alt="Product banner"
+                    fill
+                    className="object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => field.onChange("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <UploadButton
+                  endpoint="imageUploader"
+                  onClientUploadComplete={(res) => {
+                    if (res && res.length > 0) {
+                      field.onChange(res[0].url);
+                      toast.success("Banner uploaded successfully");
+                      // Clear any banner validation errors
+                      form.clearErrors("banner");
+                    }
+                  }}
+                  onUploadError={(error: Error) => {
+                    toast.error(`Upload error: ${error.message}`);
+                  }}
+                />
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div>
           <Button

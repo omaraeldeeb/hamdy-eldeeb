@@ -11,20 +11,17 @@ import { Product } from "@/types";
 import Autoplay from "embla-carousel-autoplay";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
 
 const ProductCarousel = ({ data }: { data: Product[] }) => {
-  const autoplayRef = useRef(
-    Autoplay({ delay: 4000, stopOnInteraction: true, stopOnMouseEnter: true })
-  );
+  // Initialize the plugin differently to avoid the "Cannot read properties of undefined" error
+  const plugin = Autoplay({ delay: 4000, stopOnInteraction: true });
 
   return (
     <Carousel
       className="w-full mb-12"
       opts={{ loop: true }}
-      plugins={[autoplayRef.current]}
-      onMouseEnter={() => autoplayRef.current.stop()} // Pause autoplay on hover
-      onMouseLeave={() => autoplayRef.current.play()} // Resume autoplay when hover ends
+      plugins={[plugin]}
+      // Remove the problematic mouse event handlers that cause errors
     >
       <CarouselContent>
         {data.map((product: Product) => (

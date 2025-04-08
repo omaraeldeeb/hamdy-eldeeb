@@ -12,8 +12,8 @@ import {
   insertBrandSchema,
   dealSchema,
   productValidator,
+  baseProductValidatorSchema,
 } from "@/lib/validators";
-import { Decimal } from "@prisma/client/runtime/library";
 
 export type ProductImage = z.infer<typeof imageSchema> & {
   id: string;
@@ -49,30 +49,27 @@ export type Brand = z.infer<typeof insertBrandSchema> & {
   };
 };
 
-// Using the productValidator schema as a base for our Product type
-export type Product = {
+// Create a more flexible Product type by extending the base validator schema
+// and adding the necessary properties to handle Prisma's Decimal type
+type DecimalCompatible = number | { toString(): string };
+
+// First get the base product shape from the validator
+type BaseProduct = z.infer<typeof baseProductValidatorSchema>;
+
+// Then extend it with additional properties and Decimal compatibility
+export type Product = Omit<
+  BaseProduct,
+  "price" | "discount" | "rating" | "images"
+> & {
   id: string;
-  name: string;
-  nameAr: string;
-  slug: string;
-  slugAr: string;
-  description: string;
-  descriptionAr: string;
-  categoryId: string;
-  brandId: string;
-  stock: number;
-  price: number | Decimal | { toString(): string };
-  discount: number | Decimal | { toString(): string } | null;
-  rating: number | Decimal | { toString(): string };
-  numReviews: number;
-  isFeatured: boolean;
-  isLimitedTimeOffer: boolean;
-  isNewArrival: boolean;
   createdAt: Date;
-  category: Category;
-  brand: Brand;
-  images: Array<ProductImage | string>;
-  banner?: string | null;
+  price: DecimalCompatible;
+  discount?: DecimalCompatible | null;
+  rating: DecimalCompatible;
+  numReviews: number;
+  images: (string | ProductImage)[];
+  category?: Category;
+  brand?: Brand;
 };
 
 export type Cart = z.infer<typeof insertCartSchema>;

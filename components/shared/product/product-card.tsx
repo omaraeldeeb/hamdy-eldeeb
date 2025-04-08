@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductCardProps {
   product: Product;
@@ -17,30 +18,21 @@ function extractNumberValue(
   if (typeof value === "object" && value !== null && "toString" in value) {
     return parseFloat((value as { toString(): string }).toString());
   }
-  // Last resort - try to convert to string and parse
   return parseFloat(String(value));
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  // Get the first image or use a placeholder
   let imageUrl = "/images/placeholder.png";
 
-  // Process images safely with proper type assertions
   if (
     product.images &&
     Array.isArray(product.images) &&
     product.images.length > 0
   ) {
     const firstImage = product.images[0];
-
-    // If the image is a string, use it directly
     if (typeof firstImage === "string") {
       imageUrl = firstImage;
-    }
-    // If the image is an object with a url property
-    else if (typeof firstImage === "object" && firstImage !== null) {
-      // The type of ProductImage is known to have a url property
-      // Force the type assertion to ProductImage to overcome the 'never' type issue
+    } else if (typeof firstImage === "object" && firstImage !== null) {
       const imgObj = firstImage as unknown as { url: string };
       if (imgObj && imgObj.url && typeof imgObj.url === "string") {
         imageUrl = imgObj.url;
@@ -48,50 +40,71 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   }
 
-  // Convert price to number using our utility function
   const price = extractNumberValue(product.price);
-
-  // Convert discount to number if it exists
   const discount = product.discount
     ? extractNumberValue(product.discount)
     : null;
-
-  // Calculate the discounted price if there's a discount
   const finalPrice = discount ? price * (1 - discount / 100) : price;
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <Link href={`/products/${product.slug}`}>
-        <div className="relative h-48 w-full">
+    <div className="group bg-card hover:bg-card/90 rounded-lg shadow-md dark:shadow-lg dark:shadow-primary/10 overflow-hidden transition-all duration-300 transform hover:-translate-y-1 border border-border hover:border-primary/20">
+      <Link href={`/product/${product.slug}`} className="block h-full">
+        {/* Badges above image */}
+        <div className="p-2 sm:p-3 flex justify-between items-start gap-2 z-10">
+          {product.isNewArrival && (
+            <Badge className="bg-green-500 text-white text-xs px-2 py-0.5 shadow-sm">
+              NEW
+            </Badge>
+          )}
+          {discount && (
+            <Badge className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5 shadow-sm">
+              {discount}% OFF
+            </Badge>
+          )}
+        </div>
+
+        {/* Product image container - adjusted height for better mobile display */}
+        <div className="relative w-full aspect-square overflow-hidden">
           <Image
             src={imageUrl}
             alt={product.name}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            priority={false}
           />
-          {discount && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {discount}% OFF
-            </div>
-          )}
-          {product.isNewArrival && (
-            <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              NEW
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+          {/* Limited offer badge kept in corner */}
+          {product.isLimitedTimeOffer && (
+            <div className="absolute bottom-2 right-2 pointer-events-none">
+              <Badge
+                variant="outline"
+                className="bg-orange-500/90 text-white border-orange-600 shadow-md text-xs px-2 py-0.5"
+              >
+                Limited Offer
+              </Badge>
             </div>
           )}
         </div>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-          <div className="flex items-center mt-1">
+
+        {/* Product details - flexible height to accommodate content */}
+        <div className="p-3 sm:p-4 flex flex-col flex-grow">
+          <h3 className="text-base sm:text-lg font-semibold text-card-foreground truncate group-hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+
+          {/* Rating stars - responsive size */}
+          <div className="flex items-center mt-1 sm:mt-2">
             <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <svg
                   key={star}
-                  className={`w-4 h-4 ${
+                  className={`w-3 h-3 sm:w-4 sm:h-4 ${
                     star <= Math.round(extractNumberValue(product.rating))
                       ? "text-yellow-400"
-                      : "text-gray-300"
+                      : "text-muted-foreground/30"
                   }`}
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
@@ -101,34 +114,39 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </svg>
               ))}
             </div>
-            <span className="text-xs text-gray-500 ml-1">
+            <span className="text-xs text-muted-foreground ml-1">
               ({product.numReviews})
             </span>
           </div>
-          <div className="mt-2">
+
+          {/* Price section - mobile friendly spacing */}
+          <div className="mt-auto pt-1 sm:pt-2 flex flex-col">
             {discount ? (
               <div className="flex flex-col">
-                <div className="flex items-center mb-1">
-                  <span className="text-gray-500 line-through text-sm mr-2">
-                    Original: ${price.toFixed(2)}
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                  <span className="text-muted-foreground line-through text-xs sm:text-sm">
+                    ${price.toFixed(2)}
                   </span>
-                  <span className="bg-red-100 text-red-700 text-xs px-1 rounded">
+                  <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-1.5 py-0.5 rounded">
                     Save ${(price - finalPrice).toFixed(2)}
                   </span>
                 </div>
-                <span className="text-red-600 font-bold text-lg">
-                  Now: ${finalPrice.toFixed(2)}
+                <span className="text-destructive font-bold text-base sm:text-lg mt-1">
+                  ${finalPrice.toFixed(2)}
                 </span>
               </div>
             ) : (
-              <span className="font-bold text-lg">${price.toFixed(2)}</span>
-            )}
-
-            {product.isLimitedTimeOffer && (
-              <span className="inline-block mt-2 text-xs bg-orange-100 text-orange-800 py-1 px-2 rounded">
-                Limited Time Offer
+              <span className="font-bold text-card-foreground text-base sm:text-lg">
+                ${price.toFixed(2)}
               </span>
             )}
+          </div>
+
+          {/* View Details button that appears on hover - more touch-friendly on mobile */}
+          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="w-full text-center text-xs sm:text-sm text-primary font-medium inline-block py-1 border-t border-primary/20">
+              View Details
+            </span>
           </div>
         </div>
       </Link>

@@ -21,16 +21,14 @@ export const metadata: Metadata = {
   title: "Products Management",
 };
 
-export default async function ProductsPage(
-  props: {
-    searchParams: Promise<{
-      query?: string;
-      page?: string;
-      category?: string;
-      sort?: string;
-    }>;
-  }
-) {
+export default async function ProductsPage(props: {
+  searchParams: Promise<{
+    query?: string;
+    page?: string;
+    category?: string;
+    sort?: string;
+  }>;
+}) {
   const searchParams = await props.searchParams;
   await requireAdmin();
 

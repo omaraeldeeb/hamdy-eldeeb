@@ -207,9 +207,18 @@ export async function createProduct(data: z.infer<typeof insertProductSchema>) {
     const productData = insertProductSchema.parse(data);
     const { images, ...productDetails } = productData;
 
+    // Handle banner for featured products
+    let bannerField = {};
+    if (productData.isFeatured && productData.banner) {
+      bannerField = { banner: productData.banner };
+    }
+
     // Create the product first
     const newProduct = await prisma.product.create({
-      data: productDetails,
+      data: {
+        ...productDetails,
+        ...bannerField, // Add banner field if product is featured
+      },
     });
 
     // Then create all the images with the product ID
@@ -241,10 +250,22 @@ export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
     });
     if (!productExists) throw new Error("Product not found");
 
+    // Handle banner for featured products
+    let bannerField = {};
+    if (productData.isFeatured && productData.banner) {
+      bannerField = { banner: productData.banner };
+    } else if (!productData.isFeatured) {
+      // If not featured, keep the banner field as is or set to null
+      bannerField = { banner: productData.banner };
+    }
+
     // Update the product details
     await prisma.product.update({
       where: { id },
-      data: productDetails,
+      data: {
+        ...productDetails,
+        ...bannerField, // Add banner field
+      },
     });
 
     // Delete existing images

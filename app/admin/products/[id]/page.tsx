@@ -8,11 +8,9 @@ export const metadata: Metadata = {
   title: "Update Product",
 };
 
-export default async function EditProductPage(
-  props: {
-    params: Promise<{ id: string }>;
-  }
-) {
+export default async function EditProductPage(props: {
+  params: Promise<{ id: string }>;
+}) {
   const params = await props.params;
   await requireAdmin();
 

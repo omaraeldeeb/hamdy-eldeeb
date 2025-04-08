@@ -62,8 +62,7 @@ export async function addItemToCart(data: CartItem) {
         data: newCart,
       });
 
-      // Revalidate product page
-      revalidatePath(`/products/${product.slug}`);
+      revalidatePath(`/product/${product.slug}`);
 
       return {
         success: true,
@@ -104,7 +103,8 @@ export async function addItemToCart(data: CartItem) {
         },
       });
 
-      revalidatePath(`/products/${product.slug}`);
+      // Fix the path to the correct product page location
+      revalidatePath(`/product/${product.slug}`);
 
       return {
         success: true,
@@ -191,12 +191,117 @@ export async function removeItemFromCart(productId: string) {
       },
     });
 
-    // Fix the path to match your URL structure
-    revalidatePath(`/products/${product.slug}`);
+    // Fix the path to the correct product page location
+    revalidatePath(`/product/${product.slug}`);
 
     return {
       success: true,
       message: `${product.name} was removed from cart`,
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+export async function updateCartItemQuantity(
+  productId: string,
+  quantity: number
+) {
+  try {
+    // Check for cart cookie
+    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+    if (!sessionCartId) throw new Error("Cart session not found");
+
+    // Get Product
+    const product = await prisma.product.findFirst({
+      where: { id: productId },
+    });
+    if (!product) throw new Error("Product not found");
+
+    // Check if quantity is valid
+    if (quantity <= 0) throw new Error("Quantity must be greater than 0");
+    if (product.stock < quantity)
+      throw new Error(`Only ${product.stock} items available in stock`);
+
+    // Get user cart
+    const cart = await getMyCart();
+    if (!cart) throw new Error("Cart not found");
+
+    // Check for item
+    const existItem = (cart.items as CartItem[]).find(
+      (x) => x.productId === productId
+    );
+    if (!existItem) throw new Error("Item not found in cart");
+
+    // Update the quantity
+    (cart.items as CartItem[]).find((x) => x.productId === productId)!.qty =
+      quantity;
+
+    // Update cart in database
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: {
+        items: cart.items as Prisma.CartUpdateitemsInput[],
+        ...calcPrice(cart.items as CartItem[]),
+      },
+    });
+
+    // Fix the path to the correct product page location
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath("/cart");
+
+    return {
+      success: true,
+      message: `${product.name} quantity updated to ${quantity}`,
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+export async function deleteItemFromCart(productId: string) {
+  try {
+    // Check for cart cookie
+    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+    if (!sessionCartId) throw new Error("Cart session not found");
+
+    // Get Product
+    const product = await prisma.product.findFirst({
+      where: { id: productId },
+    });
+    if (!product) throw new Error("Product not found");
+
+    // Get user cart
+    const cart = await getMyCart();
+    if (!cart) throw new Error("Cart not found");
+
+    // Check for item
+    const exist = (cart.items as CartItem[]).find(
+      (x) => x.productId === productId
+    );
+    if (!exist) throw new Error("Item not found");
+
+    // Remove item completely from cart
+    cart.items = (cart.items as CartItem[]).filter(
+      (x) => x.productId !== productId
+    );
+
+    // Update cart in database
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: {
+        items: cart.items as Prisma.CartUpdateitemsInput[],
+        ...calcPrice(cart.items as CartItem[]),
+      },
+    });
+
+    // Revalidate paths
+    revalidatePath(`/product/${product.slug}`);
+    revalidatePath("/cart");
+
+    return {
+      success: true,
+      message: `${product.name} removed from cart`,
     };
   } catch (error) {
     return { success: false, message: formatError(error) };

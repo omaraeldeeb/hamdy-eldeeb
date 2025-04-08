@@ -11,11 +11,9 @@ import ReviewList from "./review-list";
 import Rating from "@/components/shared/product/rating";
 import { formatCurrency } from "@/lib/utils";
 
-export default async function ProductPage(
-  props: {
-    params: Promise<{ slug: string }>;
-  }
-) {
+export default async function ProductPage(props: {
+  params: Promise<{ slug: string }>;
+}) {
   const params = await props.params;
   const product = await getProductBySlug(params.slug);
 
@@ -32,6 +30,7 @@ export default async function ProductPage(
   const session = await auth();
   const userId = session?.user?.id;
 
+  // Get cart - could be undefined if no cart exists yet
   const cart = await getMyCart();
 
   return (
@@ -42,14 +41,9 @@ export default async function ProductPage(
 
         {/* Product details */}
         <div className="space-y-4">
-          {/* Product name in English and Arabic */}
+          {/* Product name in English only */}
           <div>
             <h1 className="text-2xl font-bold">{product.name}</h1>
-            {product.nameAr && (
-              <p className="text-xl text-right" dir="rtl">
-                {product.nameAr}
-              </p>
-            )}
           </div>
 
           {/* Category and brand info */}
@@ -103,24 +97,16 @@ export default async function ProductPage(
             )}
           </div>
 
-          {/* Description in English and Arabic */}
+          {/* Description in English only */}
           <div>
             <h2 className="text-lg font-semibold">Description</h2>
             <p className="mt-2">{product.description}</p>
-            {product.descriptionAr && (
-              <div className="mt-4">
-                <h2 className="text-lg font-semibold text-right">الوصف</h2>
-                <p className="mt-2 text-right" dir="rtl">
-                  {product.descriptionAr}
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Add to cart section */}
           <div>
             <Card>
-              <CardContent className="p-4 ">
+              <CardContent className="p-4">
                 <div className="mb-2 flex justify-between">
                   <div>Price</div>
                   <div>

@@ -52,8 +52,8 @@ export const updateBrandSchema = insertBrandSchema.extend({
   id: z.string().min(1, "Brand ID is required"),
 });
 
-// Schema for inserting products
-export const insertProductSchema = z.object({
+// Create a base product schema without refinement
+const baseProductSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long"),
   nameAr: z.string().optional().default(""),
   slug: z.string().min(3, "Slug must be at least 3 characters long"),
@@ -77,10 +77,45 @@ export const insertProductSchema = z.object({
   banner: z.string().nullable().optional(),
 });
 
-// Schema for updating products
-export const updateProductSchema = insertProductSchema.extend({
-  id: z.string().min(1, "Product ID is required"),
-});
+// Apply the refinement to create the insert schema
+export const insertProductSchema = baseProductSchema.refine(
+  (data) => {
+    // If product is featured, banner is required
+    if (
+      data.isFeatured === true &&
+      (!data.banner || data.banner.trim() === "")
+    ) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Banner image is required for featured products",
+    path: ["banner"],
+  }
+);
+
+// Create the update schema by extending the base and then applying the same refinement
+export const updateProductSchema = baseProductSchema
+  .extend({
+    id: z.string().min(1, "Product ID is required"),
+  })
+  .refine(
+    (data) => {
+      // If product is featured, banner is required
+      if (
+        data.isFeatured === true &&
+        (!data.banner || data.banner.trim() === "")
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Banner image is required for featured products",
+      path: ["banner"],
+    }
+  );
 
 // Schema for signing user in
 export const signInSchema = z.object({
@@ -232,8 +267,8 @@ export const updateDealSchema = dealSchema.extend({
   id: z.string().min(1, "Deal ID is required"),
 });
 
-// Product validator
-export const productValidator = z.object({
+// Base product validator schema
+export const baseProductValidatorSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   nameAr: z.string().optional().default(""),
   slug: z.string().min(3, "Slug must be at least 3 characters"),
@@ -246,9 +281,28 @@ export const productValidator = z.object({
   price: z.number().min(0, "Price cannot be negative"),
   discount: z.number().min(0).max(100).optional().nullable(),
   isFeatured: z.boolean().default(false),
+  banner: z.string().nullable().optional(),
   isLimitedTimeOffer: z.boolean().default(false),
   isNewArrival: z.boolean().default(false),
   images: z.array(z.string()).optional(),
 });
+
+// Apply refinement to create product validator
+export const productValidator = baseProductValidatorSchema.refine(
+  (data) => {
+    // If product is featured, banner is required
+    if (
+      data.isFeatured === true &&
+      (!data.banner || data.banner.trim() === "")
+    ) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Banner image is required for featured products",
+    path: ["banner"],
+  }
+);
 
 export type ProductFormData = z.infer<typeof productValidator>;
