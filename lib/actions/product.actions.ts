@@ -62,6 +62,7 @@ export async function getAllProducts({
   limit = PAGE_SIZE,
   page,
   categoryId,
+  brand,
   price,
   rating,
   sort,
@@ -72,6 +73,7 @@ export async function getAllProducts({
   limit?: number;
   page: number;
   categoryId?: string;
+  brand?: string; // Added brand type
   price?: string;
   rating?: string;
   sort?: string;
@@ -99,9 +101,98 @@ export async function getAllProducts({
         }
       : {};
 
-  // Category filter
-  const categoryFilter =
-    categoryId && categoryId !== "all" ? { categoryId } : {};
+  // Category filter - enhanced to include child categories
+  let categoryFilter: Prisma.ProductWhereInput = {};
+  if (categoryId && categoryId !== "all") {
+    // Use regex to check if categoryId is a UUID
+    const isUUID =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+        categoryId
+      );
+
+    if (isUUID) {
+      // Check if this is a parent category (find all child categories)
+      const childCategories = await prisma.category.findMany({
+        where: {
+          parentId: categoryId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (childCategories.length > 0) {
+        // This is a parent category with children, include all children in filter
+        const childIds = childCategories.map((child) => child.id);
+        categoryFilter = {
+          OR: [{ categoryId }, { categoryId: { in: childIds } }],
+        };
+      } else {
+        // No children, just filter by the category ID
+        categoryFilter = { categoryId };
+      }
+    } else {
+      // If it's a category name, search by name through the relation
+      // First get the category by name
+      const category = await prisma.category.findFirst({
+        where: {
+          name: {
+            equals: categoryId,
+            mode: "insensitive" as const,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (category) {
+        // Check if this category has children
+        const childCategories = await prisma.category.findMany({
+          where: {
+            parentId: category.id,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (childCategories.length > 0) {
+          // Include all children in filter
+          const childIds = childCategories.map((child) => child.id);
+          categoryFilter = {
+            OR: [{ categoryId: category.id }, { categoryId: { in: childIds } }],
+          };
+        } else {
+          // No children, just filter by the category ID
+          categoryFilter = { categoryId: category.id };
+        }
+      } else {
+        // Fallback to name-based filtering if category not found
+        categoryFilter = {
+          category: {
+            name: {
+              equals: categoryId,
+              mode: "insensitive" as const,
+            },
+          },
+        };
+      }
+    }
+  }
+
+  // Brand filter - new filter
+  const brandFilter: Prisma.ProductWhereInput =
+    brand && brand !== "all"
+      ? {
+          brand: {
+            name: {
+              equals: brand,
+              mode: "insensitive" as const,
+            },
+          },
+        }
+      : {};
 
   // Price filter
   const priceFilter: Prisma.ProductWhereInput =
@@ -136,6 +227,7 @@ export async function getAllProducts({
     where: {
       ...queryFilter,
       ...categoryFilter,
+      ...brandFilter, // Added brand filter
       ...priceFilter,
       ...ratingFilter,
       ...limitedTimeOfferFilter,
@@ -166,6 +258,7 @@ export async function getAllProducts({
     where: {
       ...queryFilter,
       ...categoryFilter,
+      ...brandFilter, // Added brand filter
       ...priceFilter,
       ...ratingFilter,
       ...limitedTimeOfferFilter,
@@ -291,13 +384,50 @@ export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
   }
 }
 
-// Get all categories from the new Category model
+// Fix the getAllCategoriesFromProducts function to return consistent types
 export async function getAllCategoriesFromProducts() {
-  // This function should be replaced with a call to category.actions.ts
-  // Keeping it temporarily for backward compatibility
-  const categoryData = await prisma.category.findMany({
+  // Fetch all categories
+  const allCategories = await prisma.category.findMany({
     select: {
       id: true,
+      name: true,
+      parentId: true,
+      level: true,
+      _count: {
+        select: { products: true },
+      },
+    },
+    orderBy: [{ level: "asc" }, { name: "asc" }],
+  });
+
+  // Group by parent for easier hierarchy building
+  const mainCategories = allCategories
+    .filter((cat) => !cat.parentId)
+    .map((category) => ({
+      category: category.name,
+      _count: category._count.products,
+      id: category.id,
+      level: category.level,
+      isParent: true,
+      children: allCategories
+        .filter((child) => child.parentId === category.id)
+        .map((subCat) => ({
+          category: subCat.name,
+          _count: subCat._count.products,
+          id: subCat.id,
+          level: subCat.level,
+          isParent: false,
+          parentId: subCat.parentId,
+        })),
+    }));
+
+  return mainCategories;
+}
+
+// Get all brands for product filters - updated to match expected interface
+export async function getAllBrandsFromProducts() {
+  const brandData = await prisma.brand.findMany({
+    select: {
       name: true,
       _count: {
         select: { products: true },
@@ -306,10 +436,9 @@ export async function getAllCategoriesFromProducts() {
     orderBy: { name: "asc" },
   });
 
-  return categoryData.map((item) => ({
-    category: item.name,
+  return brandData.map((item) => ({
+    brand: item.name,
     _count: item._count.products,
-    id: item.id,
   }));
 }
 

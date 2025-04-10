@@ -16,6 +16,7 @@ interface SortSelectProps {
   baseUrl: string;
   query: string | string[];
   category: string | string[];
+  brand?: string | string[]; // Add brand parameter with optional type
   price: string | string[];
   rating: string | string[];
   page: string | string[];

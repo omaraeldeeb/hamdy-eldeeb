@@ -2,6 +2,7 @@ import ProductCard from "@/components/shared/product/product-card";
 import {
   getAllProducts,
   getAllCategoriesFromProducts,
+  getAllBrandsFromProducts,
 } from "@/lib/actions/product.actions";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ export async function generateMetadata(props: {
   searchParams: Promise<{
     q: string;
     category: string;
+    brand: string; // Add brand to metadata
     price: string;
     rating: string;
   }>;
@@ -53,6 +55,7 @@ export async function generateMetadata(props: {
   const {
     q = "all",
     category = "all",
+    brand = "all", // Add brand with default value
     price = "all",
     rating = "all",
   } = await props.searchParams;
@@ -60,14 +63,16 @@ export async function generateMetadata(props: {
   const isQuerySet = q && q !== "all" && q.trim() !== "";
   const isCategorySet =
     category && category !== "all" && category.trim() !== "";
+  const isBrandSet = brand && brand !== "all" && brand.trim() !== ""; // Add brand check
   const isPriceSet = price && price !== "all" && price.trim() !== "";
   const isRatingSet = rating && rating !== "all" && rating.trim() !== "";
 
-  if (isQuerySet || isCategorySet || isPriceSet || isRatingSet) {
+  if (isQuerySet || isCategorySet || isBrandSet || isPriceSet || isRatingSet) {
     return {
       title: `
       Search ${isQuerySet ? q : ""} 
       ${isCategorySet ? `: Category ${category}` : ""}
+      ${isBrandSet ? `: Brand ${brand}` : ""}
       ${isPriceSet ? `: Price ${price}` : ""}
       ${isRatingSet ? `: Rating ${rating}` : ""}`,
     };
@@ -82,6 +87,7 @@ export default async function SearchPage(props: {
   searchParams: Promise<{
     query?: string;
     category?: string;
+    brand?: string; // Add brand parameter
     price?: string;
     rating?: string;
     page?: string;
@@ -95,6 +101,7 @@ export default async function SearchPage(props: {
   const {
     query: q = "all",
     category = "all",
+    brand = "all", // Add brand with default value
     price = "all",
     rating = "all",
     sort = "newest",
@@ -105,10 +112,11 @@ export default async function SearchPage(props: {
   const isLimitedTimeOffer = searchParams.isLimitedTimeOffer === "true";
   const isNewArrival = searchParams.isNewArrival === "true";
 
-  // Construct filter url - modified to support removing individual filters
+  // Construct filter url - modified to support removing individual filters and brand
   const getFilterUrl = ({
     q: newQ,
     c,
+    b, // Add brand parameter
     p,
     s,
     r,
@@ -116,6 +124,7 @@ export default async function SearchPage(props: {
   }: {
     q?: string;
     c?: string;
+    b?: string; // Add brand type
     p?: string;
     s?: string;
     r?: string;
@@ -139,6 +148,12 @@ export default async function SearchPage(props: {
     const categoryValue = c !== undefined ? c : category;
     if (categoryValue && categoryValue !== "all") {
       params.append("category", ensureString(categoryValue));
+    }
+
+    // Handle brand parameter
+    const brandValue = b !== undefined ? b : brand;
+    if (brandValue && brandValue !== "all") {
+      params.append("brand", ensureString(brandValue));
     }
 
     // Handle price parameter
@@ -173,6 +188,8 @@ export default async function SearchPage(props: {
     query: q && q !== "all" ? q.toString() : "",
     categoryId:
       category && category !== "all" ? category.toString() : undefined,
+    // Add brand parameter to API call
+    brand: brand && brand !== "all" ? brand.toString() : undefined,
     price: price && price !== "all" ? price.toString() : undefined,
     rating: rating && rating !== "all" ? rating.toString() : undefined,
     sort: sort && sort !== "newest" ? sort.toString() : undefined,
@@ -181,13 +198,15 @@ export default async function SearchPage(props: {
     isNewArrival,
   });
 
-  // Use the correct method to get categories with the expected format
+  // Use the correct methods to get categories and brands
   const categories = await getAllCategoriesFromProducts();
+  const brands = await getAllBrandsFromProducts(); // Get all brands
 
   // Count active filters
   const activeFiltersCount = [
     q !== "all" && q !== "",
     category !== "all" && category !== "",
+    brand !== "all" && brand !== "", // Add brand to filter count
     price !== "all" && price !== "",
     rating !== "all" && rating !== "",
   ].filter(Boolean).length;
@@ -198,9 +217,11 @@ export default async function SearchPage(props: {
       <div className="md:hidden mb-4">
         <MobileFilterDrawer
           categories={categories}
+          brands={brands} // Pass brands to mobile drawer
           prices={prices}
           ratings={ratings}
           currentCategory={category}
+          currentBrand={brand} // Pass current brand
           currentPrice={price}
           currentRating={rating}
           baseUrl="/search"
@@ -215,9 +236,11 @@ export default async function SearchPage(props: {
         <div className="hidden md:block">
           <FilterSidebar
             categories={categories}
+            brands={brands} // Pass brands to sidebar
             prices={prices}
             ratings={ratings}
             currentCategory={category}
+            currentBrand={brand} // Pass current brand
             currentPrice={price}
             currentRating={rating}
             baseUrl="/search"
@@ -267,6 +290,20 @@ export default async function SearchPage(props: {
                         </Link>
                       </Badge>
                     )}
+                    {brand !== "all" && brand !== "" && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        Brand: {brand}
+                        <Link
+                          href={getFilterUrl({ b: "all" })}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          ✕
+                        </Link>
+                      </Badge>
+                    )}
                     {price !== "all" && price !== "" && (
                       <Badge
                         variant="secondary"
@@ -310,6 +347,7 @@ export default async function SearchPage(props: {
                 baseUrl="/search"
                 query={q}
                 category={category}
+                brand={brand} // Add brand to sort select
                 price={price}
                 rating={rating}
                 page={page}
